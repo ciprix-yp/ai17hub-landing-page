@@ -109,5 +109,104 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
         (window as unknown as Record<string, unknown>)['lenis'] = lenis;
       }
     </script>
+
+    <!-- ── Global dynamic image rotator ──────────────────────────────────── -->
+    <script>
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const ALL_RENDERS: string[] = Array.from({ length: 15 }, (_, i) =>
+          `/renders/render-${String(i + 1).padStart(2, '0')}.jpg`
+        );
+
+        function shuffle(arr: string[]): string[] {
+          const a = [...arr];
+          for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+          }
+          return a;
+        }
+
+        // Reține ce render apare în fiecare slot — previne duplicate
+        const slotCurrentRender = new Map<HTMLImageElement, string>();
+
+        function getNextRender(): string {
+          const inUse = new Set([
+            ...slotCurrentRender.values(),
+            // Exclude și render-ul curent din hero GSAP
+            ...Array.from(
+              document.querySelectorAll<HTMLImageElement>('.hero-slide')
+            )
+              .filter(img => parseFloat(img.style.opacity || '0') > 0.1)
+              .map(img => img.src.split('/').pop() ?? ''),
+          ]);
+
+          const available = ALL_RENDERS.filter(
+            r => !Array.from(inUse).some(used => r.includes(used.replace('/renders/', '')))
+          );
+
+          const pool = available.length > 0 ? available : ALL_RENDERS;
+          return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        async function transitionSlot(img: HTMLImageElement): Promise<void> {
+          const newSrc = getNextRender();
+
+          img.style.transition = 'opacity 0.7s ease';
+          img.style.opacity = '0';
+
+          await new Promise<void>(r => setTimeout(r, 700));
+
+          // Preload înainte de swap
+          await new Promise<void>(r => {
+            const pre = new Image();
+            pre.onload = () => r();
+            pre.onerror = () => r();
+            pre.src = newSrc;
+          });
+
+          img.src = newSrc;
+          slotCurrentRender.set(img, newSrc.split('/').pop() ?? '');
+          img.style.opacity = '1';
+        }
+
+        function startRotator() {
+          const slots = Array.from(
+            document.querySelectorAll<HTMLImageElement>('[data-dynamic-img]')
+          );
+          if (slots.length === 0) return;
+
+          // Inițializează maparea
+          slots.forEach(img => {
+            slotCurrentRender.set(img, img.src.split('/').pop() ?? '');
+          });
+
+          // Shuffled queue pentru ordine aleatorie
+          let queue = shuffle(slots.map((_, i) => i));
+          let queuePos = 0;
+
+          async function tick() {
+            const slotIdx = queue[queuePos % queue.length];
+            queuePos++;
+            // Rearanjează queue la fiecare ciclu complet
+            if (queuePos % queue.length === 0) queue = shuffle(slots.map((_, i) => i));
+
+            const slot = slots[slotIdx];
+            if (slot) await transitionSlot(slot);
+
+            // Pauză între tranziții — NICIODATĂ 2 simultan
+            setTimeout(tick, 2800);
+          }
+
+          // Pornește după 6s — lasă hero-ul să înceapă primul
+          setTimeout(tick, 6000);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startRotator);
+        } else {
+          startRotator();
+        }
+      }
+    </script>
   </body>
 </html>

@@ -260,6 +260,19 @@
   const errorDiv = document.getElementById('form-error') as HTMLElement;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
 
+  // Permite debifarea unui radio prin click din nou
+  let lastCheckedRadio: HTMLInputElement | null = null;
+  document.querySelectorAll<HTMLInputElement>('input[name="interest"]').forEach((radio) => {
+    radio.addEventListener('click', () => {
+      if (lastCheckedRadio === radio) {
+        radio.checked = false;
+        lastCheckedRadio = null;
+      } else {
+        lastCheckedRadio = radio;
+      }
+    });
+  });
+
   function showError(msg: string) {
     errorDiv.textContent = msg;
     errorDiv.classList.remove('hidden');

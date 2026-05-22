@@ -1,10 +1,10 @@
 ---
-// Imaginile pentru galeria MASSTUDIO — proiecte internaționale
+// Imagini pornire pentru galeria MASSTUDIO — vor fi rotite dinamic
 const galleryImages = [
   { src: '/renders/render-04.jpg', alt: 'Proiect MASSTUDIO — spațiu arhitectural' },
-  { src: '/renders/render-05.jpg', alt: 'Proiect MASSTUDIO — interior design' },
   { src: '/renders/render-06.jpg', alt: 'Proiect MASSTUDIO — spațiu de lucru' },
-  { src: '/renders/render-07.jpg', alt: 'Proiect MASSTUDIO — detaliu arhitectural' },
+  { src: '/renders/render-09.jpg', alt: 'Proiect MASSTUDIO — interior design' },
+  { src: '/renders/render-11.jpg', alt: 'Proiect MASSTUDIO — detaliu arhitectural' },
 ];
 ---
 
@@ -51,6 +51,7 @@ const galleryImages = [
               alt={img.alt}
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               loading="lazy"
+              data-dynamic-img
             />
             <div
               class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
