@@ -17,12 +17,12 @@ interface LeadPayload {
   utm_campaign?: string;
 }
 
-const INTEREST_LABELS: Record<string, string> = {
-  incubare: 'Incubare — spațiu de lucru',
-  partener: 'Parteneriat B2B',
-  evenimente: 'Evenimente',
-  lab: 'Digital Lab — servicii tehnice',
-  curios: 'Sunt curios',
+const INTEREST_CONFIG: Record<string, { label: string; color: string; emoji: string; subject_prefix: string }> = {
+  incubare:  { label: 'Incubare — spațiu de lucru',   color: '#00E676', emoji: '🟢', subject_prefix: '[INCUBARE]' },
+  partener:  { label: 'Parteneriat B2B',              color: '#7B61FF', emoji: '🟣', subject_prefix: '[PARTENER]' },
+  evenimente:{ label: 'Evenimente',                   color: '#F59E0B', emoji: '🟡', subject_prefix: '[EVENIMENT]' },
+  lab:       { label: 'Digital Lab — servicii tehnice',color: '#06B6D4', emoji: '🔵', subject_prefix: '[LAB]' },
+  curios:    { label: 'Informații generale',           color: '#888888', emoji: '⚪', subject_prefix: '[INFO]' },
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -78,60 +78,72 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     );
   }
 
-  // 2. Email notificare → office@masstudio.ro
-  const interestLabel = INTEREST_LABELS[payload.interest] ?? payload.interest;
+  // 2. Email notificare → office@masstudio.ro cu canal per traseu
+  const cfg = INTEREST_CONFIG[payload.interest] ?? INTEREST_CONFIG['curios'];
+  const dateStr = new Date().toLocaleDateString('ro-RO', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
   const utmInfo = payload.utm_campaign
-    ? `<p style="color:#888;font-size:12px;">Sursa: ${payload.utm_source ?? '-'} / ${payload.utm_medium ?? '-'} / ${payload.utm_campaign}</p>`
+    ? `<p style="color:#555;font-size:11px;margin-top:16px;">Sursă: ${payload.utm_source ?? '-'} · ${payload.utm_medium ?? '-'} · ${payload.utm_campaign}</p>`
     : '';
 
   const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
-<body style="font-family:Arial,sans-serif;background:#1C1C1C;color:#E8DDD0;padding:32px;max-width:600px;margin:0 auto;">
-  <div style="border-left:4px solid #00E676;padding-left:20px;margin-bottom:28px;">
-    <h1 style="color:#00E676;font-size:24px;margin:0 0 4px;">Lead nou — AI17 HUB</h1>
-    <p style="color:#888;margin:0;font-size:14px;">${new Date().toLocaleDateString('ro-RO', { weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}</p>
+<body style="font-family:Arial,sans-serif;background:#0f0f0f;color:#E8DDD0;padding:0;margin:0;">
+
+  <!-- Header canal colorat per traseu -->
+  <div style="background:${cfg.color};padding:20px 32px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:1.4rem;">${cfg.emoji}</span>
+    <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.6);text-transform:uppercase;">${cfg.subject_prefix} · Canal AI17</div>
+      <div style="font-size:20px;font-weight:700;color:#0f0f0f;">${cfg.label}</div>
+    </div>
   </div>
 
-  <table style="width:100%;border-collapse:collapse;">
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;color:#888;width:35%;">Nume</td>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;font-weight:bold;">${payload.name}</td>
-    </tr>
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;color:#888;">Email</td>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;">
-        <a href="mailto:${payload.email}" style="color:#00E676;">${payload.email}</a>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;color:#888;">Interes</td>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;color:#00E676;font-weight:bold;">${interestLabel}</td>
-    </tr>
-    ${payload.company ? `
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;color:#888;">Companie</td>
-      <td style="padding:10px 0;border-bottom:1px solid #2A2A2A;">${payload.company}</td>
-    </tr>` : ''}
-    <tr>
-      <td style="padding:10px 0;color:#888;">GDPR</td>
-      <td style="padding:10px 0;color:#00E676;">✓ Acord dat la ${new Date(payload.gdpr_timestamp).toLocaleString('ro-RO')}</td>
-    </tr>
-  </table>
+  <div style="padding:32px;max-width:600px;">
 
-  ${utmInfo}
+    <!-- Lead info -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #222;color:#666;width:32%;font-size:13px;">Nume</td>
+        <td style="padding:12px 0;border-bottom:1px solid #222;font-weight:bold;font-size:15px;">${payload.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #222;color:#666;font-size:13px;">Email</td>
+        <td style="padding:12px 0;border-bottom:1px solid #222;">
+          <a href="mailto:${payload.email}" style="color:${cfg.color};font-size:15px;">${payload.email}</a>
+        </td>
+      </tr>
+      ${payload.company ? `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #222;color:#666;font-size:13px;">Companie</td>
+        <td style="padding:12px 0;border-bottom:1px solid #222;font-size:15px;">${payload.company}</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #222;color:#666;font-size:13px;">Interes</td>
+        <td style="padding:12px 0;border-bottom:1px solid #222;">
+          <span style="background:${cfg.color}22;color:${cfg.color};font-weight:700;font-size:13px;padding:3px 10px;border-radius:3px;">${cfg.label}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0;color:#666;font-size:13px;">GDPR</td>
+        <td style="padding:12px 0;color:#00E676;font-size:13px;">✓ ${new Date(payload.gdpr_timestamp).toLocaleString('ro-RO')}</td>
+      </tr>
+    </table>
 
-  <div style="margin-top:28px;padding:16px;background:#2A2A2A;border-radius:4px;">
-    <p style="margin:0;font-size:13px;color:#888;">
-      Răspunde direct la acest email sau contactează pe
-      <a href="mailto:${payload.email}" style="color:#00E676;">${payload.email}</a>
+    <!-- CTA reply -->
+    <a href="mailto:${payload.email}?subject=Re: AI17 HUB — ${cfg.label}" style="display:inline-block;background:${cfg.color};color:#0f0f0f;font-weight:700;font-size:14px;padding:12px 24px;text-decoration:none;margin-bottom:24px;">
+      Răspunde direct →
+    </a>
+
+    <p style="color:#444;font-size:11px;border-top:1px solid #1a1a1a;padding-top:16px;margin:0;">
+      ${dateStr} · Lead primit prin ai17hub.ro
     </p>
+    ${utmInfo}
   </div>
-
-  <p style="color:#444;font-size:11px;margin-top:24px;">
-    Lead primit prin landing page ai17hub.ro — AI17 HUB Pre-lansare
-  </p>
 </body>
 </html>`;
 
@@ -146,7 +158,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         from: 'AI17 HUB <noreply@ai17hub.ro>',
         to: ['office@masstudio.ro'],
         reply_to: payload.email,
-        subject: `🟢 Lead nou AI17 — ${interestLabel} — ${payload.name}`,
+        subject: `${cfg.emoji} ${cfg.subject_prefix} Lead nou AI17 — ${payload.name}`,
         html: emailHtml,
       }),
     });

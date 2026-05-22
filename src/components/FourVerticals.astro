@@ -2,48 +2,48 @@
 const cards = [
   {
     tag: 'INCUBAT',
-    tagColor: 'text-accent',
+    interest: 'incubare',
     title: 'Spațiul tău de lucru + comunitatea care îți crește afacerea.',
     body: 'De la un post în open space până la birou pentru 12 persoane. Pachete de la 200 €/lună. Aplici în 15 minute.',
-    cta: 'Vreau să aplic →',
-    href: '#aplica',
+    cta: 'Vreau să aplic',
     accent: 'De la 200 €/lună',
+    icon: '⬡',
   },
   {
     tag: 'PARTENER',
-    tagColor: 'text-accent',
+    interest: 'partener',
     title: '100+ decidenți arhitecturali. Sub același acoperiș. În fiecare zi.',
     body: 'Specificarea materialelor se decide de arhitect, nu de clientul final. Biblioteca de Produse · Exclusivitate pe categorie · 3 tier-uri de parteneriat.',
-    cta: 'Descarcă pachetul →',
-    href: '#aplica',
+    cta: 'Descarcă pachetul',
     accent: '100+ profesioniști',
+    icon: '◈',
   },
   {
     tag: 'EVENIMENT',
-    tagColor: 'text-accent',
+    interest: 'evenimente',
     title: 'Săli pentru 65–90 de persoane în centrul Constanței.',
     body: 'Sala Mare · Sala Teatru · Lobby. Conferințe, workshop-uri, lansări, spectacole. Calendar activ din Septembrie 2026.',
-    cta: 'Înscrie-mă pentru noutăți →',
-    href: '#aplica',
+    cta: 'Înscrie-mă pentru noutăți',
     accent: '65–90 locuri',
+    icon: '◇',
   },
   {
     tag: 'LAB CLIENT',
-    tagColor: 'text-accent',
+    interest: 'lab',
     title: 'BIM · LIDAR · Urban Intelligence · Eficiență Energetică.',
     body: 'Servicii tehnice pentru proiecte de anvergură. Echipament de ultimă generație. Expertiză MASSTUDIO cu proiecte în Chicago, Genova, Veneția.',
-    cta: 'Trimite un brief →',
-    href: '#aplica',
+    cta: 'Trimite un brief',
     accent: '4 servicii tehnice',
+    icon: '◉',
   },
 ];
 ---
 
-<section id="verticale" class="bg-ink py-20 md:py-28" aria-labelledby="verticals-title">
+<section id="verticale" class="bg-charcoal py-20 md:py-28" aria-labelledby="verticals-title">
   <div class="section-container">
 
-    <div class="mb-12 text-center">
-      <p class="eyebrow reveal-v mb-4">PENTRU CINE E AI17</p>
+    <div class="mb-14 text-center">
+      <p class="eyebrow reveal-v mb-4">PENTRU CINE ESTE AI17HUB</p>
       <h2
         id="verticals-title"
         class="font-editorial text-sand reveal-v"
@@ -53,37 +53,52 @@ const cards = [
       </h2>
     </div>
 
-    <!-- Grid 2x2 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5" role="list">
+    <!-- Grid 2x2 — carduri separate cu floating effect -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6" role="list">
       {cards.map((card) => (
         <article
-          class="vertical-card bg-charcoal p-8 md:p-10 flex flex-col justify-between relative cursor-default reveal-v group"
-          style={`min-height: 340px; border: 1px solid rgba(255,255,255,0.06); transition: background 0.25s, border-color 0.25s;`}
+          class="vertical-card reveal-v flex flex-col"
+          data-interest={card.interest}
           role="listitem"
+          style="background: #1C1C1C; border: 1px solid rgba(255,255,255,0.08); min-height: 360px;"
         >
-          <!-- Tag eyebrow -->
-          <div>
-            <span class={`eyebrow ${card.tagColor} block mb-4`}>{card.tag}</span>
-            <h3 class="font-sans font-bold text-sand mb-4" style="font-size: 1.25rem; line-height: 1.3;">
+          <!-- Body card -->
+          <div class="p-8 md:p-10 flex-1">
+            <div class="flex items-center justify-between mb-5">
+              <span class="eyebrow text-accent">{card.tag}</span>
+              <span class="text-grey opacity-40" style="font-size: 1.25rem;" aria-hidden="true">{card.icon}</span>
+            </div>
+
+            <h3 class="font-sans font-bold text-sand mb-4" style="font-size: 1.1875rem; line-height: 1.35;">
               {card.title}
             </h3>
-            <p class="font-sans text-grey" style="font-size: 0.9375rem; line-height: 1.65;">
+            <p class="font-sans text-grey" style="font-size: 0.9375rem; line-height: 1.7;">
               {card.body}
             </p>
+
+            <!-- Cifră accent -->
+            <div class="mt-6">
+              <span class="font-editorial text-accent font-bold" style="font-size: 1.625rem; line-height: 1;">
+                {card.accent}
+              </span>
+            </div>
           </div>
 
-          <!-- Footer card -->
-          <div class="flex items-end justify-between mt-8">
+          <!-- CTA — delimitat vizual cu border-top -->
+          <div
+            class="card-cta px-8 md:px-10 py-5 flex items-center justify-between"
+            style="border-top: 1px solid rgba(255,255,255,0.08);"
+          >
             <a
-              href={card.href}
-              class="font-sans font-semibold text-accent text-sm hover:underline transition-colors"
-              aria-label={`${card.cta} — ${card.tag}`}
+              href="#aplica"
+              class="card-cta-link font-sans font-semibold text-accent flex items-center gap-2"
+              style="font-size: 0.9375rem; text-decoration: none; transition: gap 0.2s;"
+              data-interest={card.interest}
+              aria-label={`${card.cta} — traseu ${card.tag}`}
             >
               {card.cta}
+              <span class="cta-arrow" style="transition: transform 0.2s;">→</span>
             </a>
-            <span class="font-editorial text-accent font-bold" style="font-size: 1.875rem; line-height: 1;">
-              {card.accent}
-            </span>
           </div>
         </article>
       ))}
@@ -93,33 +108,60 @@ const cards = [
 </section>
 
 <style>
+  .vertical-card {
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.45),
+      0 1px 4px rgba(0, 0, 0, 0.6);
+    transform: translateY(0) scale(1);
+    transition:
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.25s;
+  }
+
   .vertical-card:hover {
-    background-color: rgba(0, 230, 118, 0.03);
-    border-color: rgba(0, 230, 118, 0.25) !important;
+    transform: translateY(-7px) scale(1.007);
+    box-shadow:
+      0 20px 48px rgba(0, 0, 0, 0.55),
+      0 4px 12px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 230, 118, 0.2);
+    border-color: rgba(0, 230, 118, 0.22) !important;
+  }
+
+  .vertical-card:hover .card-cta {
+    border-top-color: rgba(0, 230, 118, 0.15) !important;
+  }
+
+  .vertical-card:hover .cta-arrow {
+    transform: translateX(5px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vertical-card {
+      transition: none;
+      transform: none !important;
+    }
   }
 </style>
 
 <script>
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
   gsap.registerPlugin(ScrollTrigger);
 
+  // Reveal animație la scroll
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    gsap.utils.toArray<HTMLElement>('#verticale .reveal-v').forEach((el) => {
+    gsap.utils.toArray<HTMLElement>('#verticale .reveal-v').forEach((el, i) => {
       gsap.fromTo(
         el,
-        { opacity: 0, y: 32 },
+        { opacity: 0, y: 36 },
         {
           opacity: 1,
           y: 0,
           duration: 0.65,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 88%',
-            once: true,
-          },
+          delay: (i % 2) * 0.08,
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
         }
       );
     });
@@ -128,4 +170,22 @@ const cards = [
       el.style.opacity = '1';
     });
   }
+
+  // Pre-selectează interesul în formular la click pe CTA
+  document.querySelectorAll<HTMLAnchorElement>('.card-cta-link').forEach((link) => {
+    link.addEventListener('click', () => {
+      const interest = link.dataset.interest;
+      if (!interest) return;
+
+      // Găsește radio button-ul corespunzător și îl selectează
+      const radio = document.querySelector<HTMLInputElement>(
+        `input[name="interest"][value="${interest}"]`
+      );
+      if (radio) {
+        radio.checked = true;
+        // Trigger schimbare vizuală
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+  });
 </script>
