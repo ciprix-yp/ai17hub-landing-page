@@ -41,6 +41,10 @@ importers:
       unifont:
         specifier: ^0.7.4
         version: 0.7.4
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260521.1
+        version: 4.20260521.1
 
 packages:
 
