@@ -84,34 +84,24 @@ const cards = [
             </div>
           </div>
 
-          <!-- CTA — buton profesional delimitat -->
-          <div
-            class="card-cta px-8 md:px-10 pb-8 pt-6"
-            style="border-top: 1px solid rgba(255,255,255,0.07);"
-          >
-            <a
-              href="#aplica"
-              class="card-cta-link font-sans font-bold flex items-center justify-center gap-2 w-full"
-              style="
-                background: transparent;
-                border: 1.5px solid #00E676;
-                color: #00E676;
-                font-size: 0.875rem;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                padding: 0.75rem 1.5rem;
-                text-decoration: none;
-                transition: background 0.2s, color 0.2s, transform 0.15s;
-              "
-              data-interest={card.interest}
-              aria-label={`${card.cta} — traseu ${card.tag}`}
-            >
-              <span>{card.cta}</span>
-              <span class="cta-arrow" style="transition: transform 0.2s; font-size: 1rem;">→</span>
-            </a>
-          </div>
         </article>
       ))}
+    </div>
+
+    <!-- CTA unic la finalul secțiunii -->
+    <div class="mt-14 text-center reveal-v">
+      <p class="font-sans text-grey mb-6" style="font-size: 1rem; line-height: 1.7;">
+        Indiferent de traseu — spațiu de lucru, parteneriat, eveniment sau servicii tehnice —<br class="hidden md:block" />
+        primul pas e o conversație.
+      </p>
+      <a
+        href="#aplica"
+        class="btn-primary inline-flex items-center gap-3"
+        style="font-size: 1rem; padding: 1rem 2.5rem; letter-spacing: 0.04em;"
+      >
+        Hai să vorbim
+        <span style="font-size: 1.1rem;">→</span>
+      </a>
     </div>
 
   </div>
@@ -138,20 +128,7 @@ const cards = [
     border-color: rgba(0, 230, 118, 0.22) !important;
   }
 
-  .vertical-card:hover .card-cta {
-    border-top-color: rgba(0, 230, 118, 0.15) !important;
-  }
-
   .vertical-card:hover .cta-arrow {
-    transform: translateX(5px);
-  }
-
-  .card-cta-link:hover {
-    background: #00E676 !important;
-    color: #1C1C1C !important;
-  }
-
-  .card-cta-link:hover .cta-arrow {
     transform: translateX(5px);
   }
 

@@ -55,26 +55,48 @@
   const navLine = document.getElementById('nav-line') as HTMLElement;
   const navPath = document.getElementById('nav-infinite-line') as unknown as SVGPathElement | null;
 
-  window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY;
+  // Tranziție pentru hide/show
+  navbar.style.transition = 'transform 0.35s cubic-bezier(0.16,1,0.3,1), background 0.3s, opacity 0.3s';
 
-    // Fundal blur după 20px scroll
-    if (scrollY > 20) {
-      navbar.style.cssText = `
-        background: rgba(28,28,28,0.88);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-      `;
-      navLine.style.opacity = '1';
-      // Animează linia
-      if (navPath) {
-        navPath.style.strokeDashoffset = '0';
-        navPath.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)';
+  let lastScrollY = 0;
+  let ticking = false;
+
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+
+    requestAnimationFrame(() => {
+      const scrollY = window.scrollY;
+      const diff = scrollY - lastScrollY;
+
+      // Ascunde la scroll în jos (>80px de la top), arată la scroll în sus
+      if (scrollY > 80 && diff > 0) {
+        navbar.style.transform = 'translateY(-100%)';
+      } else {
+        navbar.style.transform = 'translateY(0)';
       }
-    } else {
-      navbar.style.cssText = '';
-      navLine.style.opacity = '0';
-    }
+
+      // Fundal blur după 20px
+      if (scrollY > 20) {
+        navbar.style.background = 'rgba(28,28,28,0.88)';
+        navbar.style.backdropFilter = 'blur(14px)';
+        navbar.style.webkitBackdropFilter = 'blur(14px)';
+        navbar.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+        navLine.style.opacity = '1';
+        if (navPath) {
+          navPath.style.strokeDashoffset = '0';
+          navPath.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)';
+        }
+      } else {
+        navbar.style.background = '';
+        navbar.style.backdropFilter = '';
+        navbar.style.webkitBackdropFilter = '';
+        navbar.style.borderBottom = '';
+        navLine.style.opacity = '0';
+      }
+
+      lastScrollY = scrollY;
+      ticking = false;
+    });
   }, { passive: true });
 </script>
