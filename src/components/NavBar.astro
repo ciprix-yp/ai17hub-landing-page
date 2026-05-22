@@ -17,7 +17,12 @@
 
     <!-- CTA dreapta -->
     <div class="flex items-center gap-4">
-      <span class="text-grey font-sans text-xs tracking-widest uppercase hidden md:block">Constanța · 2026</span>
+      <!-- Comutator limbă RO / EN -->
+      <div class="hidden sm:flex items-center gap-1 font-sans text-xs font-semibold tracking-widest" aria-label="Selectează limba">
+        <span class="text-sand">RO</span>
+        <span class="text-grey">·</span>
+        <a href="/en/" class="text-grey hover:text-sand transition-colors" hreflang="en" aria-label="Switch to English">EN</a>
+      </div>
       <a
         href="#aplica"
         class="btn-primary text-sm px-5 py-3"

@@ -7,7 +7,7 @@
 
   <div class="section-container pt-14">
     <div class="max-w-2xl mx-auto text-center mb-12">
-      <p class="eyebrow mb-4">Fii printre primii</p>
+      <p class="eyebrow mb-4">FII PRINTRE PRIMII</p>
       <h2
         id="form-title"
         class="font-editorial text-sand mb-4"
@@ -260,9 +260,6 @@
   const errorDiv = document.getElementById('form-error') as HTMLElement;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
 
-  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-
   function showError(msg: string) {
     errorDiv.textContent = msg;
     errorDiv.classList.remove('hidden');
@@ -308,8 +305,9 @@
 
     // UI: loading
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Se trimite...';
+    submitBtn.textContent = 'Trimitere...';
 
+    const params = new URLSearchParams(window.location.search);
     const payload = {
       name,
       email,
@@ -318,33 +316,21 @@
       gdpr_consent: true,
       gdpr_timestamp: new Date().toISOString(),
       source: 'landing-prelaunch',
-      utm_source: new URLSearchParams(window.location.search).get('utm_source'),
-      utm_medium: new URLSearchParams(window.location.search).get('utm_medium'),
-      utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign'),
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
     };
 
     try {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY ||
-          SUPABASE_URL === 'https://your-project.supabase.co') {
-        // Development: log payload și arată success
-        console.log('📧 Form payload (dev mode):', payload);
-        await new Promise((r) => setTimeout(r, 800));
-      } else {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/prelaunch_leads`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify(payload),
-        });
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        if (!res.ok) {
-          const errBody = await res.text();
-          throw new Error(`Eroare server: ${res.status} — ${errBody}`);
-        }
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errBody.error ?? `Eroare server: ${res.status}`);
       }
 
       // Succes
