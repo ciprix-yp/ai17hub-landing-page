@@ -84,20 +84,30 @@ const cards = [
             </div>
           </div>
 
-          <!-- CTA — delimitat vizual cu border-top -->
+          <!-- CTA — buton profesional delimitat -->
           <div
-            class="card-cta px-8 md:px-10 py-5 flex items-center justify-between"
-            style="border-top: 1px solid rgba(255,255,255,0.08);"
+            class="card-cta px-8 md:px-10 pb-8 pt-6"
+            style="border-top: 1px solid rgba(255,255,255,0.07);"
           >
             <a
               href="#aplica"
-              class="card-cta-link font-sans font-semibold text-accent flex items-center gap-2"
-              style="font-size: 0.9375rem; text-decoration: none; transition: gap 0.2s;"
+              class="card-cta-link font-sans font-bold flex items-center justify-center gap-2 w-full"
+              style="
+                background: transparent;
+                border: 1.5px solid #00E676;
+                color: #00E676;
+                font-size: 0.875rem;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                padding: 0.75rem 1.5rem;
+                text-decoration: none;
+                transition: background 0.2s, color 0.2s, transform 0.15s;
+              "
               data-interest={card.interest}
               aria-label={`${card.cta} — traseu ${card.tag}`}
             >
-              {card.cta}
-              <span class="cta-arrow" style="transition: transform 0.2s;">→</span>
+              <span>{card.cta}</span>
+              <span class="cta-arrow" style="transition: transform 0.2s; font-size: 1rem;">→</span>
             </a>
           </div>
         </article>
@@ -133,6 +143,15 @@ const cards = [
   }
 
   .vertical-card:hover .cta-arrow {
+    transform: translateX(5px);
+  }
+
+  .card-cta-link:hover {
+    background: #00E676 !important;
+    color: #1C1C1C !important;
+  }
+
+  .card-cta-link:hover .cta-arrow {
     transform: translateX(5px);
   }
 
