@@ -25,7 +25,7 @@ const INTEREST_CONFIG: Record<string, { label: string; color: string; emoji: str
   curios:    { label: 'Informații generale',           color: '#888888', emoji: '⚪', subject_prefix: '[INFO]' },
 };
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function onRequestPost({ request, env }: { request: Request; env: Env }): Promise<Response> {
   const headers = {
     'Access-Control-Allow-Origin': 'https://ai17hub.ro',
     'Content-Type': 'application/json',
@@ -174,9 +174,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-};
+}
 
-export const onRequestOptions: PagesFunction = async () => {
+export async function onRequestOptions(): Promise<Response> {
   return new Response(null, {
     status: 204,
     headers: {
@@ -185,4 +185,4 @@ export const onRequestOptions: PagesFunction = async () => {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-};
+}
