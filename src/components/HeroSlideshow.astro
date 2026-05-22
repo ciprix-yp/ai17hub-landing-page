@@ -1,0 +1,242 @@
+---
+// Toate cele 15 randări — ordinea creează "plimbarea prin clădire"
+// Stăm exterior → intrăm → urcăm → mansardă
+const renders = [
+  '/renders/render-03.jpg', // Exterior fațadă — deschidere cinematografică
+  '/renders/render-04.jpg',
+  '/renders/render-05.jpg',
+  '/renders/render-08.jpg', // Recepție / lobby
+  '/renders/render-09.jpg',
+  '/renders/render-10.jpg',
+  '/renders/render-15.jpg', // Spații de lucru
+  '/renders/render-11.jpg',
+  '/renders/render-12.jpg',
+  '/renders/render-13.jpg',
+  '/renders/render-14.jpg',
+  '/renders/render-01.jpg', // Mansardă — open space cu grinzi
+  '/renders/render-02.jpg',
+  '/renders/render-06.jpg',
+  '/renders/render-07.jpg', // Final — revenim la sentiment de ansamblu
+];
+---
+
+<section
+  id="hero"
+  class="relative w-full overflow-hidden bg-ink"
+  style="height: 100svh; min-height: 600px;"
+  aria-label="AI17 HUB — Prima infrastructură mixtă din Dobrogea"
+>
+  <!-- Slideshow imagini -->
+  <div class="hero-slides absolute inset-0" aria-hidden="true">
+    {renders.map((src, i) => (
+      <img
+        src={src}
+        alt=""
+        class="hero-slide absolute inset-0 w-full h-full object-cover"
+        style={`opacity: ${i === 0 ? 1 : 0}; transform: scale(1);`}
+        loading={i === 0 ? 'eager' : 'lazy'}
+        decoding={i === 0 ? 'sync' : 'async'}
+      />
+    ))}
+  </div>
+
+  <!-- Overlay gradient — permite lizibilitatea textului stânga -->
+  <div
+    class="absolute inset-0 pointer-events-none"
+    style="background: linear-gradient(to right, rgba(28,28,28,0.88) 0%, rgba(28,28,28,0.55) 50%, rgba(28,28,28,0.1) 100%); z-index: 1;"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Overlay bottom — pentru tranziția spre secțiunea următoare -->
+  <div
+    class="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+    style="background: linear-gradient(to bottom, transparent, #1C1C1C); z-index: 1;"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Conținut text -->
+  <div
+    class="relative section-container flex flex-col justify-center h-full"
+    style="z-index: 2; padding-top: 80px;"
+  >
+    <div class="max-w-2xl">
+      <!-- Eyebrow -->
+      <p class="eyebrow hero-eyebrow mb-6" style="opacity: 0; transform: translateY(16px);">
+        Constanța · 2026 · Smart Urban Regeneration
+      </p>
+
+      <!-- H1 -->
+      <h1
+        class="font-editorial text-sand leading-[1.05] mb-6"
+        style="font-size: clamp(2.5rem, 6vw, 5rem);"
+      >
+        <span class="hero-line block" style="opacity: 0; transform: translateY(24px);">O clădire din 1906.</span>
+        <span class="hero-line block" style="opacity: 0; transform: translateY(24px);">Un hub pentru Constanța</span>
+        <span class="hero-line block" style="opacity: 0; transform: translateY(24px);">de mâine.</span>
+      </h1>
+
+      <!-- Subtitlu -->
+      <p
+        class="hero-sub font-sans text-grey mb-10 max-w-xl"
+        style="font-size: clamp(0.9375rem, 1.5vw, 1.125rem); line-height: 1.65; opacity: 0; transform: translateY(16px);"
+      >
+        Prima infrastructură mixtă din Dobrogea pentru arhitecți, ingineri,
+        designeri și firme tech. Incubare · Digital Lab · Evenimente · Parteneri B2B.
+      </p>
+
+      <!-- CTAs -->
+      <div class="hero-ctas flex flex-wrap gap-4" style="opacity: 0; transform: translateY(16px);">
+        <a href="#aplica" class="btn-primary">
+          Vreau să fiu printre primii
+        </a>
+        <a href="#proiect" class="btn-outline">
+          Descoperă proiectul ↓
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicator scroll -->
+  <div
+    class="hero-scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+    style="z-index: 2; opacity: 0;"
+    aria-hidden="true"
+  >
+    <span class="font-sans text-grey text-xs tracking-widest uppercase">Scroll</span>
+    <div class="w-px h-10 bg-accent origin-top" style="animation: scrollPulse 2s ease-in-out infinite;"></div>
+  </div>
+</section>
+
+<style>
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(0.6); }
+    50% { opacity: 1; transform: scaleY(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-line,
+    .hero-eyebrow,
+    .hero-sub,
+    .hero-ctas,
+    .hero-scroll-hint {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    .hero-slide {
+      transition: none !important;
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 1; }
+    }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
+
+  // ── Animație intrare text ──────────────────────────────────────────────────
+
+  const tl = gsap.timeline({ delay: 0.2 });
+
+  if (!prefersReducedMotion) {
+    tl.to('.hero-eyebrow', {
+      opacity: 1,
+      y: 0,
+      duration: 0.6,
+      ease: 'power3.out',
+    })
+      .to(
+        '.hero-line',
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+          stagger: 0.1,
+        },
+        '-=0.3'
+      )
+      .to(
+        '.hero-sub',
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+        },
+        '-=0.3'
+      )
+      .to(
+        '.hero-ctas',
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: 'power3.out',
+        },
+        '-=0.2'
+      )
+      .to(
+        '.hero-scroll-hint',
+        {
+          opacity: 1,
+          duration: 0.5,
+        },
+        '-=0.1'
+      );
+  } else {
+    // Fără animație — arată tot instant
+    gsap.set(
+      ['.hero-eyebrow', '.hero-line', '.hero-sub', '.hero-ctas', '.hero-scroll-hint'],
+      { opacity: 1, y: 0 }
+    );
+  }
+
+  // ── Slideshow Ken Burns ────────────────────────────────────────────────────
+
+  if (!prefersReducedMotion) {
+    const slides = Array.from(
+      document.querySelectorAll<HTMLImageElement>('.hero-slide')
+    );
+    let current = 0;
+
+    function showSlide(index: number) {
+      const prev = slides[index];
+      const next = slides[(index + 1) % slides.length];
+
+      // Ken Burns pe imaginea curentă
+      gsap.to(prev, {
+        scale: 1.08,
+        duration: 5.5,
+        ease: 'none',
+      });
+
+      // Crossfade după 3.5s
+      gsap.to(next, {
+        opacity: 1,
+        duration: 1.4,
+        ease: 'power2.inOut',
+        delay: 3.5,
+      });
+      gsap.to(prev, {
+        opacity: 0,
+        duration: 1.4,
+        ease: 'power2.inOut',
+        delay: 3.5,
+        onComplete: () => {
+          // Resetează scale-ul imaginii care tocmai a dispărut
+          gsap.set(prev, { scale: 1 });
+          current = (current + 1) % slides.length;
+          showSlide(current);
+        },
+      });
+    }
+
+    // Pornește slideshow-ul după ce textul apare
+    setTimeout(() => showSlide(0), 1000);
+  }
+</script>

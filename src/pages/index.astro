@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NavBar from '../components/NavBar.astro';
+import HeroSlideshow from '../components/HeroSlideshow.astro';
+import StatsBar from '../components/StatsBar.astro';
+import WhatIsAI17 from '../components/WhatIsAI17.astro';
+import FourVerticals from '../components/FourVerticals.astro';
+import Spaces from '../components/Spaces.astro';
+import Timeline1906 from '../components/Timeline1906.astro';
+import CaptureForm from '../components/CaptureForm.astro';
+import MassStudio from '../components/MassStudio.astro';
+import FOMOEvent from '../components/FOMOEvent.astro';
+import Footer from '../components/Footer.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
+import CookieBanner from '../components/CookieBanner.astro';
+---
+
+<BaseLayout
+  title="Avram Iancu 17 · HUB Constanța — Smart Urban Regeneration"
+  description="Prima infrastructură mixtă din Dobrogea pentru arhitecți, ingineri, designeri și firme tech. Incubare, Digital Lab, Evenimente, Parteneri B2B. Constanța, 2026."
+>
+  <NavBar />
+
+  <main id="main-content">
+    <HeroSlideshow />
+    <StatsBar />
+    <WhatIsAI17 />
+    <FourVerticals />
+    <Spaces />
+    <Timeline1906 />
+    <CaptureForm />
+    <MassStudio />
+    <FOMOEvent />
+  </main>
+
+  <Footer />
+
+  <WhatsAppButton />
+  <CookieBanner />
+</BaseLayout>

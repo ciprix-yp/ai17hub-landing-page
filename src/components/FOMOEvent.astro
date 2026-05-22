@@ -1,0 +1,55 @@
+---
+---
+
+<section
+  class="py-10 md:py-12"
+  style="background: #2A2A2A; border-left: 4px solid #00E676;"
+  aria-labelledby="fomo-title"
+>
+  <div class="section-container">
+    <div class="flex items-start gap-4">
+
+      <!-- Dot animat -->
+      <div class="flex-shrink-0 pt-1" aria-hidden="true">
+        <span
+          class="fomo-dot block w-2.5 h-2.5 rounded-full bg-accent"
+          style="animation: pulse-dot 1.8s ease-in-out infinite;"
+        ></span>
+      </div>
+
+      <!-- Conținut -->
+      <div>
+        <p class="eyebrow mb-3">Live · 24 Mai 2026</p>
+        <h2
+          id="fomo-title"
+          class="font-sans font-bold text-sand mb-3"
+          style="font-size: clamp(1.125rem, 2.5vw, 1.5rem); line-height: 1.3;"
+        >
+          Mihai Stebingăr vorbește la FOMO,<br />Zoom Beach Constanța.
+        </h2>
+        <p class="font-sans text-grey" style="font-size: 1rem; line-height: 1.65;">
+          "Constanța cu fața spre mare — cum reconstruim un oraș."<br />
+          Conferință despre regenerare urbană, verticala urbană și viziunea
+          comunității de specialiști care poate transforma Dobrogea.
+        </p>
+        <p class="font-sans text-grey mt-2" style="font-size: 0.9375rem;">
+          <strong class="text-sand">Vineri, 24 Mai 2026</strong> · Zoom Beach · Constanța
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.4; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fomo-dot {
+      animation: none !important;
+      opacity: 1;
+    }
+  }
+</style>

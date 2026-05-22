@@ -1,0 +1,193 @@
+---
+const floors = [
+  {
+    id: 'parter',
+    label: 'Parter',
+    title: 'Parter — Public, vibrant, punct de întâlnire.',
+    body: 'Bistro · Recepție · Lobby · Sala Teatru (65 locuri) · Atelier 3D + Plotter. Deschis publicului în zilele de evenimente.',
+    image: '/renders/render-03.jpg',
+    imageAlt: 'Parter AI17 HUB — zona publică și recepție',
+    specs: ['Sala Teatru: 65 locuri', 'Bistro: 30 locuri', 'Atelier 3D: 20 persoane'],
+  },
+  {
+    id: 'supanta',
+    label: 'Supantă',
+    title: 'Supantă — Privată, productivă, nucleul comunității.',
+    body: 'Birouri private (1–12 persoane) · Săli de ședință · Library · Sala Mare conferințe (90 locuri). Acces card 24/7 pentru incubați.',
+    image: '/renders/render-08.jpg',
+    imageAlt: 'Supantă AI17 HUB — birouri private și săli de ședință',
+    specs: ['Sala Mare: 90 locuri', '4 birouri private', 'Acces 24/7'],
+  },
+  {
+    id: 'mansarda',
+    label: 'Mansardă',
+    title: 'Mansardă — Luminoasă, deschisă, laboratorul.',
+    body: 'Open space 30 posturi · Lab BIM/LIDAR · Grinzi de lemn originale 1906 · Lumină zenitală Velux · Stații Workstation NVIDIA RTX.',
+    image: '/renders/render-01.jpg',
+    imageAlt: 'Mansardă AI17 HUB — open space cu grinzi originale din 1906',
+    specs: ['30 posturi coworking', '8 stații Workstation RTX', 'Scanner LIDAR Leica'],
+  },
+];
+---
+
+<section id="spatii" class="bg-ink py-20 md:py-28" aria-labelledby="spaces-title">
+  <div class="section-container">
+
+    <div class="mb-12 text-center reveal-s">
+      <p class="eyebrow mb-4">Spațiile</p>
+      <h2
+        id="spaces-title"
+        class="font-editorial text-sand"
+        style="font-size: clamp(1.75rem, 4vw, 2.75rem);"
+      >
+        Trei niveluri. Trei caractere.<br />O singură comunitate.
+      </h2>
+      <p class="font-sans text-grey mt-4 max-w-lg mx-auto" style="font-size: 1rem; line-height: 1.65;">
+        Parter public · Supantă privată · Mansardă productivă.<br />
+        Toate conectate prin scara elicoidală centrală.
+      </p>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="reveal-s">
+      <div
+        class="flex gap-0 border-b mb-0"
+        style="border-color: rgba(255,255,255,0.1);"
+        role="tablist"
+        aria-label="Nivelurile clădirii"
+      >
+        {floors.map((floor, i) => (
+          <button
+            class="spaces-tab font-sans font-bold text-base px-6 py-3 transition-colors relative"
+            style={`color: ${i === 0 ? '#E8DDD0' : '#888888'}; background: none; border: none; cursor: pointer;`}
+            role="tab"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            aria-controls={`panel-${floor.id}`}
+            id={`tab-${floor.id}`}
+            data-floor={floor.id}
+          >
+            {floor.label}
+            {i === 0 && (
+              <span
+                class="spaces-tab-indicator absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+                style="transition: opacity 0.2s;"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <!-- Tab panels -->
+      {floors.map((floor, i) => (
+        <div
+          id={`panel-${floor.id}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${floor.id}`}
+          class="spaces-panel grid grid-cols-1 md:grid-cols-2 gap-8 pt-0"
+          style={`display: ${i === 0 ? 'grid' : 'none'}; min-height: 400px;`}
+        >
+          <!-- Text -->
+          <div class="flex flex-col justify-center py-10 md:py-12 pr-0 md:pr-8">
+            <h3 class="font-sans font-bold text-sand mb-4" style="font-size: 1.375rem; line-height: 1.3;">
+              {floor.title}
+            </h3>
+            <p class="font-sans text-grey mb-8" style="font-size: 1rem; line-height: 1.7;">
+              {floor.body}
+            </p>
+            <ul class="space-y-2">
+              {floor.specs.map((spec) => (
+                <li class="flex items-center gap-3 font-sans text-grey text-sm">
+                  <span class="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" aria-hidden="true"></span>
+                  {spec}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Imagine -->
+          <div class="relative overflow-hidden" style="min-height: 320px;">
+            <img
+              src={floor.image}
+              alt={floor.imageAlt}
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- CTA -->
+    <div class="mt-10 text-center reveal-s">
+      <a href="#aplica" class="btn-outline">
+        Programează un tur ghidat →
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  // Tab switching
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.spaces-tab');
+  const panels = document.querySelectorAll<HTMLElement>('.spaces-panel');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const floorId = tab.dataset.floor!;
+
+      // Deactivate all
+      tabs.forEach((t) => {
+        t.style.color = '#888888';
+        t.setAttribute('aria-selected', 'false');
+        const indicator = t.querySelector('.spaces-tab-indicator') as HTMLElement | null;
+        if (indicator) indicator.style.opacity = '0';
+      });
+
+      panels.forEach((p) => {
+        p.style.display = 'none';
+        p.style.opacity = '0';
+      });
+
+      // Activate selected
+      tab.style.color = '#E8DDD0';
+      tab.setAttribute('aria-selected', 'true');
+      const activeIndicator = tab.querySelector('.spaces-tab-indicator') as HTMLElement | null;
+      if (activeIndicator) activeIndicator.style.opacity = '1';
+
+      const activePanel = document.getElementById(`panel-${floorId}`) as HTMLElement;
+      if (activePanel) {
+        activePanel.style.display = 'grid';
+        requestAnimationFrame(() => {
+          activePanel.style.transition = 'opacity 0.3s ease';
+          activePanel.style.opacity = '1';
+        });
+      }
+    });
+  });
+
+  // Reveal on scroll
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    gsap.utils.toArray<HTMLElement>('#spatii .reveal-s').forEach((el) => {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.65,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        }
+      );
+    });
+  } else {
+    document.querySelectorAll<HTMLElement>('#spatii .reveal-s').forEach((el) => {
+      el.style.opacity = '1';
+    });
+  }
+</script>

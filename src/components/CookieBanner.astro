@@ -1,0 +1,83 @@
+---
+---
+
+<div
+  id="cookie-banner"
+  class="fixed bottom-0 left-0 right-0 z-50 hidden"
+  style="background: #2A2A2A; border-top: 1px solid rgba(255,255,255,0.1);"
+  role="dialog"
+  aria-label="Banner consimțământ cookies"
+  aria-modal="false"
+>
+  <div class="section-container py-5">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+
+      <p class="font-sans text-grey flex-1" style="font-size: 0.875rem; line-height: 1.6;">
+        Folosim cookies esențiale pentru funcționarea site-ului și, cu acordul tău, Plausible Analytics
+        (anonimizat, fără tracking cross-site).
+        <a href="/legal/cookies" class="text-accent hover:underline ml-1" target="_blank" rel="noopener">
+          Detalii →
+        </a>
+      </p>
+
+      <div class="flex flex-wrap gap-3 flex-shrink-0">
+        <button
+          id="cookie-reject"
+          class="font-sans font-semibold text-grey text-sm px-4 py-2 hover:text-sand transition-colors"
+          aria-label="Acceptă doar cookies esențiale"
+        >
+          Doar esențiale
+        </button>
+        <button
+          id="cookie-accept"
+          class="btn-primary text-sm px-5 py-2"
+          aria-label="Acceptă toate cookies"
+        >
+          Acceptă toate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CONSENT_KEY = 'ai17-cookie-consent-v1';
+  const banner = document.getElementById('cookie-banner') as HTMLElement;
+  const acceptBtn = document.getElementById('cookie-accept') as HTMLButtonElement;
+  const rejectBtn = document.getElementById('cookie-reject') as HTMLButtonElement;
+  const settingsBtn = document.getElementById('cookie-settings-btn') as HTMLButtonElement | null;
+
+  function setConsent(analytics: boolean) {
+    localStorage.setItem(
+      CONSENT_KEY,
+      JSON.stringify({
+        necessary: true,
+        analytics,
+        marketing: false,
+        date: new Date().toISOString(),
+        version: '1.0',
+      })
+    );
+    banner.style.display = 'none';
+    banner.classList.add('hidden');
+  }
+
+  function showBanner() {
+    banner.classList.remove('hidden');
+    banner.style.display = '';
+  }
+
+  // Verifică consimțământ existent
+  const existing = localStorage.getItem(CONSENT_KEY);
+  if (!existing) {
+    // Arată bannerul cu un mic delay
+    setTimeout(showBanner, 1500);
+  }
+
+  acceptBtn?.addEventListener('click', () => setConsent(true));
+  rejectBtn?.addEventListener('click', () => setConsent(false));
+  settingsBtn?.addEventListener('click', () => {
+    localStorage.removeItem(CONSENT_KEY);
+    showBanner();
+  });
+</script>

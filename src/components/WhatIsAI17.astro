@@ -1,0 +1,87 @@
+---
+import InfiniteLine from './InfiniteLine.astro';
+---
+
+<section id="proiect" class="bg-ink py-20 md:py-28" aria-labelledby="what-is-title">
+  <div class="section-container">
+    <div class="max-w-3xl mx-auto text-center">
+
+      <!-- Eyebrow -->
+      <p class="eyebrow reveal-item mb-6">Proiectul</p>
+
+      <!-- H2 -->
+      <h2
+        id="what-is-title"
+        class="font-editorial text-sand reveal-item mb-10"
+        style="font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.15;"
+      >
+        Nu e un coworking.<br />E un ecosistem.
+      </h2>
+
+      <!-- Paragrafe -->
+      <p
+        class="font-sans text-sand reveal-item mb-6"
+        style="font-size: 1.0625rem; line-height: 1.75; max-width: 680px; margin-left: auto; margin-right: auto;"
+      >
+        Avram Iancu 17 este prima infrastructură de tip mixed-use din Dobrogea dedicată
+        industriei creative și tehnice. O clădire din 1906, reabilitată cu fonduri UE
+        și investiție privată de peste 1.000.000 EUR, transformată în pol de inovație
+        pentru profesioniștii care construiesc — la propriu și la figurat — Constanța
+        de mâine.
+      </p>
+
+      <p
+        class="font-sans text-sand reveal-item mb-14"
+        style="font-size: 1.0625rem; line-height: 1.75; max-width: 680px; margin-left: auto; margin-right: auto;"
+      >
+        Nu vindem metri pătrați. Creăm context. Context în care un arhitect poate lucra
+        lângă un inginer BIM, lângă un developer, lângă un urbanist — și din această
+        proximitate se nasc proiecte pe care niciunul nu le-ar fi putut livra singur.
+      </p>
+
+      <!-- Linia infinită + Pull quote -->
+      <div class="reveal-item flex flex-col items-center">
+        <InfiniteLine width="240px" class="mb-8" />
+
+        <blockquote class="font-editorial text-sand italic max-w-xl" style="font-size: clamp(1.2rem, 2.5vw, 1.625rem); line-height: 1.5;">
+          "A city is not made of concrete.<br />
+          It's made of the people who dare to reimagine it."
+        </blockquote>
+        <cite class="eyebrow text-grey mt-4 not-italic">— Citat ancoră AI17</cite>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    gsap.utils.toArray<HTMLElement>('#proiect .reveal-item').forEach((el, i) => {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: 28 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+          delay: i * 0.08,
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            once: true,
+          },
+        }
+      );
+    });
+  } else {
+    document.querySelectorAll<HTMLElement>('#proiect .reveal-item').forEach((el) => {
+      el.style.opacity = '1';
+    });
+  }
+</script>

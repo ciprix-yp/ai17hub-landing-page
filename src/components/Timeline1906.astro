@@ -1,0 +1,174 @@
+---
+const events = [
+  {
+    year: '1906',
+    text: 'Construcție inițială ca depozit agricol. Fațadă originală, grinzi din lemn masiv.',
+  },
+  {
+    year: '2022',
+    text: 'Preluare MASSTUDIO SRL + proiectare reabilitare. Viziunea: un hub pentru profesioniștii Dobrogei.',
+  },
+  {
+    year: '2024–2025',
+    text: 'Reabilitare termică cu fonduri UE + finisaje. Investiție privată totală: 1.000.000 EUR+.',
+  },
+  {
+    year: '2026',
+    text: 'Deschidere HUB Avram Iancu 17. Prima cohortă de incubați: Septembrie 2026.',
+    highlight: true,
+  },
+];
+---
+
+<section id="poveste" class="bg-ink py-20 md:py-28" aria-labelledby="timeline-title">
+  <div class="section-container">
+
+    <div class="mb-14 text-center reveal-t">
+      <p class="eyebrow mb-4">Povestea clădirii</p>
+      <h2
+        id="timeline-title"
+        class="font-editorial text-sand"
+        style="font-size: clamp(1.75rem, 4vw, 2.75rem);"
+      >
+        Din 1906, până în 2026.<br />120 de ani de transformare.
+      </h2>
+    </div>
+
+    <!-- Timeline desktop: orizontal / mobile: vertical -->
+    <div class="reveal-t">
+
+      <!-- Desktop horizontal timeline -->
+      <div class="hidden md:block relative">
+        <!-- Linia de progres animată -->
+        <div class="timeline-track absolute top-6 left-0 right-0 h-px" style="background: rgba(255,255,255,0.1);">
+          <div
+            id="timeline-progress"
+            class="h-full bg-accent origin-left"
+            style="transform: scaleX(0); transition: none;"
+          ></div>
+        </div>
+
+        <!-- Events -->
+        <div class="grid grid-cols-4 gap-6 relative">
+          {events.map((ev, i) => (
+            <div class={`timeline-item pt-14 ${ev.highlight ? 'text-accent' : ''}`}>
+              <!-- Dot -->
+              <div
+                class="absolute top-0 w-3 h-3 rounded-full border-2 timeline-dot"
+                style={`
+                  border-color: ${ev.highlight ? '#00E676' : 'rgba(255,255,255,0.3)'};
+                  background: ${ev.highlight ? '#00E676' : '#1C1C1C'};
+                  left: ${i === 0 ? '0' : i === 1 ? '25%' : i === 2 ? '50%' : '75%'};
+                  transform: translateX(-50%);
+                `}
+                aria-hidden="true"
+              ></div>
+
+              <div class="font-editorial font-bold text-accent" style="font-size: 1.875rem; line-height: 1;">
+                {ev.year}
+              </div>
+              <p class={`font-sans mt-3 ${ev.highlight ? 'text-sand' : 'text-grey'}`} style="font-size: 0.9375rem; line-height: 1.65;">
+                {ev.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Mobile vertical timeline -->
+      <div class="md:hidden space-y-0">
+        {events.map((ev, i) => (
+          <div class="flex gap-6 pb-10 last:pb-0">
+            <!-- Linie verticală + dot -->
+            <div class="flex flex-col items-center flex-shrink-0">
+              <div
+                class="w-3 h-3 rounded-full border-2 flex-shrink-0"
+                style={`
+                  border-color: ${ev.highlight ? '#00E676' : 'rgba(255,255,255,0.3)'};
+                  background: ${ev.highlight ? '#00E676' : '#1C1C1C'};
+                `}
+                aria-hidden="true"
+              ></div>
+              {i < events.length - 1 && (
+                <div class="w-px flex-grow mt-2" style="background: rgba(255,255,255,0.1);"></div>
+              )}
+            </div>
+
+            <!-- Conținut -->
+            <div class="pb-2">
+              <div class="font-editorial font-bold text-accent" style="font-size: 1.75rem;">
+                {ev.year}
+              </div>
+              <p class={`font-sans mt-2 ${ev.highlight ? 'text-sand' : 'text-grey'}`} style="font-size: 0.9375rem; line-height: 1.65;">
+                {ev.text}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Citat fondator -->
+    <div class="reveal-t mt-14 max-w-2xl mx-auto">
+      <blockquote
+        class="font-sans text-sand pl-6"
+        style="border-left: 4px solid #00E676; font-size: 1rem; line-height: 1.75; font-style: italic;"
+      >
+        "Clădirile vechi din Constanța dispar una câte una. Avram Iancu 17 e o demonstrație
+        că poți păstra arhitectura istorică și să creezi în același timp un spațiu de lucru
+        contemporan, sustenabil, util pentru profesioniștii care construiesc orașul de mâine."
+      </blockquote>
+      <cite class="block font-sans text-grey text-sm mt-3 not-italic pl-6">
+        — Mihai Stebingăr, arhitect, fondator MASSTUDIO
+      </cite>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
+
+  if (!prefersReducedMotion) {
+    // Animează progresul liniei timeline
+    const progress = document.getElementById('timeline-progress');
+    if (progress) {
+      gsap.to(progress, {
+        scaleX: 1,
+        duration: 1.8,
+        ease: 'power2.inOut',
+        scrollTrigger: {
+          trigger: '#poveste .timeline-track',
+          start: 'top 75%',
+          once: true,
+        },
+      });
+    }
+
+    // Reveal items
+    gsap.utils.toArray<HTMLElement>('#poveste .reveal-t').forEach((el) => {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.65,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        }
+      );
+    });
+  } else {
+    document.querySelectorAll<HTMLElement>('#poveste .reveal-t').forEach((el) => {
+      el.style.opacity = '1';
+    });
+  }
+</script>

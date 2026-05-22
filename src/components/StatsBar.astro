@@ -1,0 +1,97 @@
+---
+const stats = [
+  { value: 1906, label: 'Anul clădirii', prefix: '', suffix: '', decimals: 0 },
+  { value: 1000000, label: 'Investiție EUR', prefix: '', suffix: '€+', format: '1M' },
+  { value: 100, label: 'Profesioniști', prefix: '', suffix: '+', decimals: 0 },
+  { value: 4, label: 'Verticale', prefix: '', suffix: '', decimals: 0 },
+];
+---
+
+<section class="bg-charcoal py-12 md:py-16" aria-label="Cifre cheie AI17 HUB">
+  <div class="section-container">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4" role="list">
+      {stats.map((stat, i) => (
+        <div class="stat-item text-center" role="listitem">
+          <div
+            class="font-editorial text-accent font-bold stat-number"
+            style="font-size: clamp(2.5rem, 5vw, 3.5rem); line-height: 1;"
+            data-value={stat.value}
+            data-suffix={stat.suffix}
+            data-format={stat.format ?? ''}
+            data-index={i}
+          >
+            {stat.format ?? stat.value}{stat.suffix}
+          </div>
+          <div class="eyebrow text-grey mt-2" style="letter-spacing: 0.12em;">
+            {stat.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
+
+  if (!prefersReducedMotion) {
+    const numbers = document.querySelectorAll<HTMLElement>('.stat-number');
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+
+          const el = entry.target as HTMLElement;
+          const target = parseInt(el.dataset.value ?? '0', 10);
+          const suffix = el.dataset.suffix ?? '';
+          const format = el.dataset.format ?? '';
+
+          if (format === '1M') {
+            // Animație specială: 0 → 1M
+            const duration = 1400;
+            const startTime = performance.now();
+
+            function tick(now: number) {
+              const elapsed = now - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              const value = Math.floor(eased * target);
+
+              if (value >= 1_000_000) {
+                el.textContent = `1M${suffix}`;
+              } else if (value >= 1_000) {
+                el.textContent = `${Math.floor(value / 1000)}K${suffix}`;
+              } else {
+                el.textContent = `${value}${suffix}`;
+              }
+
+              if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          } else {
+            let start = 0;
+            const duration = 1200;
+            const startTime = performance.now();
+
+            function tick(now: number) {
+              const elapsed = now - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              const value = Math.floor(eased * target);
+              el.textContent = `${value}${suffix}`;
+              if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    numbers.forEach((el) => observer.observe(el));
+  }
+</script>

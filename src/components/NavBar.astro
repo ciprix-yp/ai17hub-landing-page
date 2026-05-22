@@ -1,0 +1,75 @@
+---
+---
+
+<header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+  <nav class="section-container flex items-center justify-between py-5" aria-label="Navigare principală">
+
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2 group" aria-label="AI17 HUB — Acasă">
+      <svg width="44" height="32" viewBox="0 0 44 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Linia infinită -->
+        <path d="M2 16 Q 11 6, 22 16 T 42 16" stroke="#00E676" stroke-width="2" fill="none" stroke-linecap="round" />
+        <!-- "17" text -->
+        <text x="6" y="29" font-family="Barlow, sans-serif" font-weight="700" font-size="11" fill="#E8DDD0" letter-spacing="1">AI17</text>
+      </svg>
+      <span class="font-sans font-bold text-base tracking-[0.12em] text-sand uppercase hidden sm:block">HUB</span>
+    </a>
+
+    <!-- CTA dreapta -->
+    <div class="flex items-center gap-4">
+      <span class="text-grey font-sans text-xs tracking-widest uppercase hidden md:block">Constanța · 2026</span>
+      <a
+        href="#aplica"
+        class="btn-primary text-sm px-5 py-3"
+        aria-label="Aplică pentru incubare la AI17 HUB"
+      >
+        Aplică →
+      </a>
+    </div>
+  </nav>
+
+  <!-- Linia infinită — apare după scroll -->
+  <div id="nav-line" class="h-px w-full opacity-0 transition-opacity duration-500 overflow-hidden">
+    <svg viewBox="0 0 1200 2" preserveAspectRatio="none" class="w-full h-full" aria-hidden="true">
+      <path
+        id="nav-infinite-line"
+        d="M0 1 Q 300 -2, 600 1 T 1200 1"
+        stroke="#00E676"
+        stroke-width="1"
+        fill="none"
+        pathLength="100"
+        stroke-dasharray="100"
+        stroke-dashoffset="100"
+      />
+    </svg>
+  </div>
+</header>
+
+<script>
+  const navbar = document.getElementById('navbar') as HTMLElement;
+  const navLine = document.getElementById('nav-line') as HTMLElement;
+  const navPath = document.getElementById('nav-infinite-line') as unknown as SVGPathElement | null;
+
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+
+    // Fundal blur după 20px scroll
+    if (scrollY > 20) {
+      navbar.style.cssText = `
+        background: rgba(28,28,28,0.88);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      `;
+      navLine.style.opacity = '1';
+      // Animează linia
+      if (navPath) {
+        navPath.style.strokeDashoffset = '0';
+        navPath.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)';
+      }
+    } else {
+      navbar.style.cssText = '';
+      navLine.style.opacity = '0';
+    }
+  }, { passive: true });
+</script>

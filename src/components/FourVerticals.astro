@@ -1,0 +1,131 @@
+---
+const cards = [
+  {
+    tag: 'Incubat',
+    tagColor: 'text-accent',
+    title: 'Spațiul tău de lucru + comunitatea care îți crește afacerea.',
+    body: 'De la un post în open space până la birou pentru 12 persoane. Pachete de la 200 €/lună. Aplici în 15 minute.',
+    cta: 'Vreau să aplic →',
+    href: '#aplica',
+    accent: 'De la 200 €/lună',
+  },
+  {
+    tag: 'Partener',
+    tagColor: 'text-accent',
+    title: '100+ decidenți arhitecturali. Sub același acoperiș. În fiecare zi.',
+    body: 'Specificarea materialelor se decide de arhitect, nu de clientul final. Biblioteca de Produse · Exclusivitate pe categorie · 3 tier-uri de parteneriat.',
+    cta: 'Descarcă pachetul →',
+    href: '#aplica',
+    accent: '100+ profesioniști',
+  },
+  {
+    tag: 'Eveniment',
+    tagColor: 'text-accent',
+    title: 'Săli pentru 65–90 de persoane în centrul Constanței.',
+    body: 'Sala Mare · Sala Teatru · Lobby. Conferințe, workshop-uri, lansări, spectacole. Calendar activ din Septembrie 2026.',
+    cta: 'Înscrie-mă pentru noutăți →',
+    href: '#aplica',
+    accent: '65–90 locuri',
+  },
+  {
+    tag: 'Lab Client',
+    tagColor: 'text-accent',
+    title: 'BIM · LIDAR · Urban Intelligence · Eficiență Energetică.',
+    body: 'Servicii tehnice pentru proiecte de anvergură. Echipament de ultimă generație. Expertiză MASSTUDIO cu proiecte în Chicago, Genova, Veneția.',
+    cta: 'Trimite un brief →',
+    href: '#aplica',
+    accent: '4 servicii tehnice',
+  },
+];
+---
+
+<section id="verticale" class="bg-ink py-20 md:py-28" aria-labelledby="verticals-title">
+  <div class="section-container">
+
+    <div class="mb-12 text-center">
+      <p class="eyebrow reveal-v mb-4">Pentru cine e AI17</p>
+      <h2
+        id="verticals-title"
+        class="font-editorial text-sand reveal-v"
+        style="font-size: clamp(1.75rem, 4vw, 2.75rem);"
+      >
+        Patru trasee. O singură comunitate.
+      </h2>
+    </div>
+
+    <!-- Grid 2x2 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5" role="list">
+      {cards.map((card) => (
+        <article
+          class="vertical-card bg-charcoal p-8 md:p-10 flex flex-col justify-between relative cursor-default reveal-v group"
+          style={`min-height: 340px; border: 1px solid rgba(255,255,255,0.06); transition: background 0.25s, border-color 0.25s;`}
+          role="listitem"
+        >
+          <!-- Tag eyebrow -->
+          <div>
+            <span class={`eyebrow ${card.tagColor} block mb-4`}>{card.tag}</span>
+            <h3 class="font-sans font-bold text-sand mb-4" style="font-size: 1.25rem; line-height: 1.3;">
+              {card.title}
+            </h3>
+            <p class="font-sans text-grey" style="font-size: 0.9375rem; line-height: 1.65;">
+              {card.body}
+            </p>
+          </div>
+
+          <!-- Footer card -->
+          <div class="flex items-end justify-between mt-8">
+            <a
+              href={card.href}
+              class="font-sans font-semibold text-accent text-sm hover:underline transition-colors"
+              aria-label={`${card.cta} — ${card.tag}`}
+            >
+              {card.cta}
+            </a>
+            <span class="font-editorial text-accent font-bold" style="font-size: 1.875rem; line-height: 1;">
+              {card.accent}
+            </span>
+          </div>
+        </article>
+      ))}
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .vertical-card:hover {
+    background-color: rgba(0, 230, 118, 0.03);
+    border-color: rgba(0, 230, 118, 0.25) !important;
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    gsap.utils.toArray<HTMLElement>('#verticale .reveal-v').forEach((el) => {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: 32 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.65,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 88%',
+            once: true,
+          },
+        }
+      );
+    });
+  } else {
+    document.querySelectorAll<HTMLElement>('#verticale .reveal-v').forEach((el) => {
+      el.style.opacity = '1';
+    });
+  }
+</script>

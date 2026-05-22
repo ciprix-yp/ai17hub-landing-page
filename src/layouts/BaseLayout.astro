@@ -1,0 +1,113 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const {
+  title = 'Avram Iancu 17 · HUB Constanța — Smart Urban Regeneration',
+  description = 'Prima infrastructură mixtă din Dobrogea pentru arhitecți, ingineri, designeri și firme tech. Incubare, Digital Lab, Evenimente, Parteneri B2B. Constanța, 2026.',
+  ogImage = 'https://ai17hub.ro/og-image.jpg',
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content="O clădire din 1906. Un hub pentru Constanța de mâine." />
+    <meta property="og:description" content="Aplicații pentru incubare deschise. Spații de lucru, comunitate, Digital Lab BIM·LIDAR·Urban Intelligence." />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="ro_RO" />
+    <meta property="og:site_name" content="AI17 HUB" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Fonts — Google Fonts (self-hosted în producție finală) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Avram Iancu 17 HUB",
+        "description": "Prima infrastructură mixtă din Dobrogea pentru arhitecți, ingineri, designeri și firme tech.",
+        "url": "https://ai17hub.ro",
+        "telephone": "+40-723-171-168",
+        "email": "office@ai17hub.ro",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Strada Avram Iancu 17",
+          "addressLocality": "Constanța",
+          "addressCountry": "RO"
+        },
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "MASSTUDIO SRL"
+        },
+        "openingHours": "Mo-Su 00:00-24:00"
+      }
+    </script>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Sari la conținut</a>
+    <slot />
+
+    <!-- Lenis smooth scroll — inițializat global -->
+    <script>
+      import Lenis from 'lenis';
+
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+
+      if (!prefersReducedMotion) {
+        const lenis = new Lenis({
+          duration: 1.2,
+          easing: (t: number) =>
+            Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          smoothWheel: true,
+        });
+
+        function raf(time: number) {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // Expune lenis global pentru componente GSAP
+        (window as unknown as Record<string, unknown>)['lenis'] = lenis;
+      }
+    </script>
+  </body>
+</html>

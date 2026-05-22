@@ -1,0 +1,138 @@
+---
+const navLinks = [
+  { label: 'Proiectul 1906', href: '#poveste' },
+  { label: 'Spații & Facilități', href: '#spatii' },
+  { label: 'Incubare', href: '#aplica' },
+  { label: 'Digital Lab', href: '#verticale' },
+  { label: 'Parteneri B2B', href: '#verticale' },
+  { label: 'Evenimente', href: '#verticale' },
+];
+
+const socialLinks = [
+  { label: 'LinkedIn', href: '#' },
+  { label: 'Instagram', href: '#' },
+  { label: 'Newsletter', href: '#aplica' },
+];
+
+const legalLinks = [
+  { label: 'Politica de confidențialitate', href: '/legal/confidentialitate' },
+  { label: 'Politica de cookies', href: '/legal/cookies' },
+  { label: 'Termeni și condiții', href: '/legal/termeni' },
+];
+---
+
+<footer class="py-14 md:py-16" style="background: #111111;" aria-label="Footer AI17 HUB">
+
+  <div class="section-container">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+
+      <!-- Coloana 1: Brand -->
+      <div class="sm:col-span-2 md:col-span-1">
+        <!-- Logo text -->
+        <div class="flex items-center gap-2 mb-4">
+          <svg width="36" height="26" viewBox="0 0 44 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 16 Q 11 6, 22 16 T 42 16" stroke="#00E676" stroke-width="2" fill="none" stroke-linecap="round" />
+            <text x="6" y="29" font-family="Barlow, sans-serif" font-weight="700" font-size="11" fill="#E8DDD0" letter-spacing="1">AI17</text>
+          </svg>
+          <span class="font-sans font-bold text-sand text-sm tracking-[0.15em] uppercase">HUB</span>
+        </div>
+
+        <p class="font-sans italic text-grey mb-5" style="font-size: 0.875rem; line-height: 1.6;">
+          O clădire. Un concept. Un oraș care se schimbă.
+        </p>
+
+        <address class="not-italic font-sans text-grey" style="font-size: 0.875rem; line-height: 1.9;">
+          Str. Avram Iancu 17, Constanța<br />
+          <a
+            href="tel:+40723171168"
+            class="hover:text-sand transition-colors"
+            aria-label="Telefon AI17 HUB: +40 723 171 168"
+          >
+            +40 723 171 168
+          </a><br />
+          <a
+            href="mailto:office@ai17hub.ro"
+            class="hover:text-sand transition-colors"
+            aria-label="Email AI17 HUB: office@ai17hub.ro"
+          >
+            office@ai17hub.ro
+          </a>
+        </address>
+      </div>
+
+      <!-- Coloana 2: Site -->
+      <nav aria-label="Secțiuni site">
+        <h3 class="eyebrow text-accent mb-4">Site</h3>
+        <ul class="space-y-2.5">
+          {navLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="font-sans text-grey text-sm hover:text-sand transition-colors"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <!-- Coloana 3: Comunitate -->
+      <nav aria-label="Social media și comunitate">
+        <h3 class="eyebrow text-accent mb-4">Comunitate</h3>
+        <ul class="space-y-2.5">
+          {socialLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="font-sans text-grey text-sm hover:text-sand transition-colors"
+                target={link.href.startsWith('#') ? undefined : '_blank'}
+                rel={link.href.startsWith('#') ? undefined : 'noopener noreferrer'}
+              >
+                {link.label} →
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <!-- Coloana 4: Legal -->
+      <nav aria-label="Pagini legale">
+        <h3 class="eyebrow text-accent mb-4">Legal</h3>
+        <ul class="space-y-2.5">
+          {legalLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="font-sans text-grey text-sm hover:text-sand transition-colors"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <!-- Cookie preferences -->
+        <button
+          id="cookie-settings-btn"
+          class="font-sans text-grey text-sm hover:text-sand transition-colors mt-2.5 text-left"
+          aria-label="Schimbă preferințele cookie"
+        >
+          Preferințe cookies ↗
+        </button>
+      </nav>
+    </div>
+
+    <!-- Linie separator -->
+    <div class="h-px mb-6" style="background: rgba(255,255,255,0.08);" aria-hidden="true"></div>
+
+    <!-- Bara finală -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p class="font-sans text-grey text-xs">
+        © 2026 MASSTUDIO SRL · Toate drepturile rezervate · ai17hub.ro
+      </p>
+      <p class="font-sans text-grey text-xs">
+        Site by <span class="text-sand">Deep Logic</span> · Powered by Astro + Cloudflare
+      </p>
+    </div>
+  </div>
+</footer>

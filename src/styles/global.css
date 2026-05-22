@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1C1C1C;
+  --color-charcoal: #2A2A2A;
+  --color-accent: #00E676;
+  --color-sand: #E8DDD0;
+  --color-grey: #888888;
+  --color-cream: #F5F0E8;
+  --color-warm: #FAF7F2;
+
+  --font-sans: "Barlow", Arial, sans-serif;
+  --font-editorial: Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: auto; /* Lenis handles smooth scroll */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: #1C1C1C;
+    color: #E8DDD0;
+    font-family: "Barlow", Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Focus visible - accesibilitate */
+  :focus-visible {
+    outline: 2px solid #00E676;
+    outline-offset: 3px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #00E676;
+    color: #1C1C1C;
+    font-family: "Barlow", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    letter-spacing: 0.02em;
+    padding: 0.875rem 2rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #00ff84;
+    transform: scale(1.01);
+  }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #00E676;
+    color: #00E676;
+    font-family: "Barlow", Arial, sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.875rem 2rem;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-outline:hover {
+    background-color: rgba(0, 230, 118, 0.08);
+  }
+
+  .eyebrow {
+    font-family: "Barlow", Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #00E676;
+  }
+
+  .section-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Skip to content — accesibilitate */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    background: #00E676;
+    color: #1C1C1C;
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    z-index: 9999;
+    transition: top 0.2s;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+}

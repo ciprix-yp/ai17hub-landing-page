@@ -1,0 +1,56 @@
+---
+interface Props {
+  width?: string;
+  class?: string;
+}
+const { width = '280px', class: className = '' } = Astro.props;
+---
+
+<div class={`infinite-line-wrapper ${className}`} style={`width: ${width}; height: 24px; overflow: hidden;`} aria-hidden="true">
+  <svg viewBox="0 0 280 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full infinite-line-svg">
+    <path
+      class="infinite-line-path"
+      d="M0 12 Q 70 2, 140 12 T 280 12"
+      stroke="#00E676"
+      stroke-width="1.5"
+      fill="none"
+      pathLength="100"
+      stroke-dasharray="100"
+      stroke-dashoffset="100"
+    />
+  </svg>
+</div>
+
+<style>
+  .infinite-line-path {
+    transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .infinite-line-svg.revealed .infinite-line-path {
+    stroke-dashoffset: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .infinite-line-path {
+      stroke-dashoffset: 0;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const svg = entry.target.querySelector('.infinite-line-svg');
+          if (svg) svg.classList.add('revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.5 }
+  );
+
+  document.querySelectorAll('.infinite-line-wrapper').forEach((el) => {
+    observer.observe(el);
+  });
+</script>

@@ -1,0 +1,363 @@
+---
+---
+
+<section id="aplica" class="bg-charcoal py-20 md:py-28" aria-labelledby="form-title">
+  <!-- Separator verde deasupra -->
+  <div class="w-full h-0.5 bg-accent mb-0" aria-hidden="true"></div>
+
+  <div class="section-container pt-14">
+    <div class="max-w-2xl mx-auto text-center mb-12">
+      <p class="eyebrow mb-4">Fii printre primii</p>
+      <h2
+        id="form-title"
+        class="font-editorial text-sand mb-4"
+        style="font-size: clamp(1.75rem, 4vw, 2.75rem);"
+      >
+        Aplicațiile pentru prima cohortă<br />sunt deschise.
+      </h2>
+      <p class="font-sans text-grey" style="font-size: 1rem; line-height: 1.7;">
+        Lasă-ne datele tale și te contactăm cu detalii despre pachetele disponibile,
+        calendarul de selecție și vizita ghidată la sediu.
+      </p>
+    </div>
+
+    <!-- Form container -->
+    <div
+      class="max-w-lg mx-auto bg-ink p-8 md:p-12"
+      style="border: 1px solid rgba(255,255,255,0.08);"
+    >
+
+      <!-- Stare formular -->
+      <form id="capture-form" novalidate aria-label="Formular de contact pre-lansare AI17 HUB">
+
+        <!-- Nume -->
+        <div class="form-field mb-6">
+          <label for="field-name" class="form-label">Prenume și Nume</label>
+          <input
+            type="text"
+            id="field-name"
+            name="name"
+            placeholder="Ion Popescu"
+            class="form-input"
+            required
+            autocomplete="name"
+            aria-required="true"
+          />
+        </div>
+
+        <!-- Email -->
+        <div class="form-field mb-6">
+          <label for="field-email" class="form-label">Email profesional</label>
+          <input
+            type="email"
+            id="field-email"
+            name="email"
+            placeholder="ion@firmata.ro"
+            class="form-input"
+            required
+            autocomplete="email"
+            aria-required="true"
+          />
+        </div>
+
+        <!-- Interes -->
+        <fieldset class="mb-6">
+          <legend class="form-label mb-3">Mă interesează</legend>
+          <div class="space-y-3" role="group">
+            {[
+              { value: 'incubare', label: 'Incubare — vreau spațiu de lucru' },
+              { value: 'partener', label: 'Parteneriat B2B — reprezentăm o firmă' },
+              { value: 'evenimente', label: 'Evenimente — organizez sau particip' },
+              { value: 'lab', label: 'Digital Lab — am nevoie de servicii tehnice' },
+              { value: 'curios', label: 'Sunt curios — vreau să știu mai mult' },
+            ].map((opt) => (
+              <label class="flex items-center gap-3 cursor-pointer group/radio">
+                <input
+                  type="radio"
+                  name="interest"
+                  value={opt.value}
+                  class="form-radio sr-only"
+                  required
+                />
+                <span class="radio-custom" aria-hidden="true"></span>
+                <span class="font-sans text-grey text-sm group-has-[:checked]/radio:text-sand transition-colors">
+                  {opt.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <!-- Companie (opțional) -->
+        <div class="form-field mb-8">
+          <label for="field-company" class="form-label">
+            Companie / Firmă
+            <span class="text-grey font-normal normal-case tracking-normal ml-1" style="font-size: 0.75rem;">(opțional)</span>
+          </label>
+          <input
+            type="text"
+            id="field-company"
+            name="company"
+            placeholder="MASSTUDIO SRL"
+            class="form-input"
+            autocomplete="organization"
+          />
+        </div>
+
+        <!-- GDPR -->
+        <div class="mb-8">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              id="field-gdpr"
+              name="gdpr"
+              required
+              class="gdpr-checkbox sr-only"
+              aria-required="true"
+            />
+            <span class="gdpr-box flex-shrink-0 mt-0.5" aria-hidden="true"></span>
+            <span class="font-sans text-grey" style="font-size: 0.875rem; line-height: 1.6;">
+              Am citit și înțeles
+              <a href="/legal/confidentialitate" class="text-accent hover:underline" target="_blank" rel="noopener">
+                Politica de confidențialitate
+              </a>
+              și sunt de acord cu prelucrarea datelor mele în scopul contactării.
+            </span>
+          </label>
+        </div>
+
+        <!-- Error message -->
+        <div id="form-error" class="hidden mb-4 p-3 font-sans text-sm" style="background: rgba(255,80,80,0.1); border-left: 3px solid #ff5050; color: #ff8080;" role="alert" aria-live="assertive"></div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full btn-primary justify-center"
+          style="height: 52px; font-size: 1rem;"
+          aria-label="Trimite datele de contact — vei fi contactat în 48 de ore"
+        >
+          Trimite — te contactăm în 48h
+        </button>
+
+      </form>
+
+      <!-- Stare succes (ascunsă inițial) -->
+      <div id="form-success" class="hidden text-center py-8" role="status" aria-live="polite">
+        <div class="text-accent font-editorial font-bold mb-4" style="font-size: 3rem;">✓</div>
+        <h3 class="font-editorial text-sand mb-4" style="font-size: 1.5rem;">Mulțumim!</h3>
+        <p class="font-sans text-grey mb-6" style="font-size: 0.9375rem; line-height: 1.7;">
+          Am primit datele tale. Te contactăm în maxim 48 de ore
+          de la <strong class="text-sand">office@ai17hub.ro</strong> — verifică și folderul Spam.
+        </p>
+        <p class="font-sans text-grey" style="font-size: 0.875rem;">
+          Între timp, urmărește-ne pe
+          <a href="#" class="text-accent hover:underline">LinkedIn</a> și
+          <a href="#" class="text-accent hover:underline">Instagram</a>
+          pentru primele imagini din hub.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  .form-label {
+    display: block;
+    font-family: 'Barlow', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888888;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #888888;
+    color: #E8DDD0;
+    font-family: 'Barlow', Arial, sans-serif;
+    font-size: 1rem;
+    padding: 0.625rem 0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input::placeholder {
+    color: rgba(136, 136, 136, 0.5);
+  }
+
+  .form-input:focus {
+    border-bottom-color: #00E676;
+  }
+
+  .form-input.error {
+    border-bottom-color: #ff5050;
+  }
+
+  /* Radio custom */
+  .radio-custom {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #888888;
+    flex-shrink: 0;
+    transition: border-color 0.2s, background-color 0.2s;
+    position: relative;
+  }
+
+  .form-radio:checked + .radio-custom {
+    border-color: #00E676;
+    background-color: #00E676;
+  }
+
+  .form-radio:focus-visible + .radio-custom {
+    outline: 2px solid #00E676;
+    outline-offset: 2px;
+  }
+
+  /* Checkbox GDPR custom */
+  .gdpr-box {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #888888;
+    transition: border-color 0.2s, background-color 0.2s;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .gdpr-checkbox:checked + .gdpr-box {
+    border-color: #00E676;
+    background-color: #00E676;
+  }
+
+  .gdpr-checkbox:checked + .gdpr-box::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 6px;
+    height: 10px;
+    border: 2px solid #1C1C1C;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+  }
+
+  .gdpr-checkbox:focus-visible + .gdpr-box {
+    outline: 2px solid #00E676;
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('capture-form') as HTMLFormElement;
+  const successDiv = document.getElementById('form-success') as HTMLElement;
+  const errorDiv = document.getElementById('form-error') as HTMLElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+  function showError(msg: string) {
+    errorDiv.textContent = msg;
+    errorDiv.classList.remove('hidden');
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideError() {
+    errorDiv.classList.add('hidden');
+    errorDiv.textContent = '';
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const data = new FormData(form);
+    const name = (data.get('name') as string)?.trim();
+    const email = (data.get('email') as string)?.trim();
+    const interest = data.get('interest') as string;
+    const company = (data.get('company') as string)?.trim() || null;
+    const gdpr = data.get('gdpr') === 'on';
+
+    // Validare client-side
+    if (!name) {
+      showError('Te rugăm să completezi numele.');
+      document.getElementById('field-name')?.focus();
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError('Te rugăm să introduci un email valid.');
+      document.getElementById('field-email')?.focus();
+      return;
+    }
+    if (!interest) {
+      showError('Te rugăm să selectezi un domeniu de interes.');
+      return;
+    }
+    if (!gdpr) {
+      showError('Este necesar acordul pentru prelucrarea datelor.');
+      document.getElementById('field-gdpr')?.focus();
+      return;
+    }
+
+    // UI: loading
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Se trimite...';
+
+    const payload = {
+      name,
+      email,
+      interest,
+      company,
+      gdpr_consent: true,
+      gdpr_timestamp: new Date().toISOString(),
+      source: 'landing-prelaunch',
+      utm_source: new URLSearchParams(window.location.search).get('utm_source'),
+      utm_medium: new URLSearchParams(window.location.search).get('utm_medium'),
+      utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign'),
+    };
+
+    try {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY ||
+          SUPABASE_URL === 'https://your-project.supabase.co') {
+        // Development: log payload și arată success
+        console.log('📧 Form payload (dev mode):', payload);
+        await new Promise((r) => setTimeout(r, 800));
+      } else {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/prelaunch_leads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Eroare server: ${res.status} — ${errBody}`);
+        }
+      }
+
+      // Succes
+      form.style.display = 'none';
+      successDiv.classList.remove('hidden');
+
+    } catch (err) {
+      console.error('Form error:', err);
+      showError(
+        'A apărut o eroare tehnică. Te rugăm să ne scrii direct la office@ai17hub.ro'
+      );
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Trimite — te contactăm în 48h';
+    }
+  });
+</script>
