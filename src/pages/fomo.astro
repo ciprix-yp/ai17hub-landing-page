@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const CAMPAIGN = 'qr-fomo-24mai';
+const EVENT_DATE = '24 Mai 2026';
+---
+
+<BaseLayout
+  title="Live Stats — FOMO 24 Mai · AI17 HUB"
+  description="Statistici live scanări QR eveniment FOMO Constanța"
+>
+  <main
+    class="min-h-screen bg-ink flex flex-col items-center justify-center px-6"
+    style="padding-top: 80px;"
+  >
+    <div class="max-w-lg w-full text-center">
+
+      <!-- Header -->
+      <p class="eyebrow mb-4">FOMO · {EVENT_DATE} · ZOOM BEACH CONSTANȚA</p>
+      <h1 class="font-editorial text-sand mb-2" style="font-size: clamp(1.5rem, 4vw, 2.5rem);">
+        Scanări QR live
+      </h1>
+      <p class="font-sans text-grey mb-12" style="font-size: 0.9375rem;">
+        Persoane care au accesat <strong class="text-sand">ai17hub.ro</strong> prin QR codul de la eveniment
+      </p>
+
+      <!-- Counter principal -->
+      <div
+        class="bg-charcoal mx-auto mb-8 flex flex-col items-center justify-center"
+        style="width: 220px; height: 220px; border: 1px solid rgba(255,255,255,0.08); position: relative;"
+      >
+        <div id="scan-count" class="font-editorial text-accent font-bold" style="font-size: 5rem; line-height: 1;">
+          —
+        </div>
+        <div class="eyebrow text-grey mt-2" style="font-size: 0.625rem;">SCANĂRI</div>
+
+        <!-- Pulsing dot — live -->
+        <div
+          style="position: absolute; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px;"
+        >
+          <span
+            style="width: 8px; height: 8px; border-radius: 50%; background: #00E676; animation: pulse-live 1.5s infinite;"
+          ></span>
+          <span class="font-sans text-grey" style="font-size: 0.625rem; letter-spacing: 0.1em;">LIVE</span>
+        </div>
+      </div>
+
+      <!-- Stats secundare -->
+      <div class="grid grid-cols-2 gap-4 mb-10">
+        <div class="bg-charcoal p-5" style="border: 1px solid rgba(255,255,255,0.06);">
+          <div id="today-count" class="font-editorial text-sand font-bold" style="font-size: 2rem;">—</div>
+          <div class="font-sans text-grey mt-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Azi</div>
+        </div>
+        <div class="bg-charcoal p-5" style="border: 1px solid rgba(255,255,255,0.06);">
+          <div id="last-scan" class="font-sans text-sand font-semibold" style="font-size: 1rem;">—</div>
+          <div class="font-sans text-grey mt-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Ultimul scan</div>
+        </div>
+      </div>
+
+      <!-- Auto-refresh info -->
+      <p class="font-sans text-grey" style="font-size: 0.8125rem;">
+        Se actualizează automat la fiecare 15 secunde
+      </p>
+      <p class="font-sans text-grey mt-1" style="font-size: 0.75rem; opacity: 0.5;">
+        Campanie: <code>{CAMPAIGN}</code>
+      </p>
+
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  @keyframes pulse-live {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+
+<script define:vars={{ CAMPAIGN }}>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+  const elTotal = document.getElementById('scan-count');
+  const elToday = document.getElementById('today-count');
+  const elLast  = document.getElementById('last-scan');
+
+  async function fetchStats() {
+    if (!SUPABASE_URL || SUPABASE_URL.includes('your-project')) {
+      if (elTotal) elTotal.textContent = '0';
+      return;
+    }
+
+    try {
+      // Total scanări pentru campanie
+      const [totalRes, todayRes, lastRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/qr_scans?campaign=eq.${CAMPAIGN}&select=id`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'count=exact', 'Range-Unit': 'items', Range: '0-0' } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/qr_scans?campaign=eq.${CAMPAIGN}&scanned_at=gte.${new Date().toISOString().split('T')[0]}&select=id`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'count=exact', 'Range-Unit': 'items', Range: '0-0' } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/qr_scans?campaign=eq.${CAMPAIGN}&order=scanned_at.desc&limit=1&select=scanned_at`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+        ),
+      ]);
+
+      // Total — din header Content-Range
+      const totalCount = parseInt(totalRes.headers.get('content-range')?.split('/')[1] ?? '0', 10);
+      const todayCount = parseInt(todayRes.headers.get('content-range')?.split('/')[1] ?? '0', 10);
+      const lastData = await lastRes.json();
+
+      if (elTotal) elTotal.textContent = String(totalCount || 0);
+      if (elToday) elToday.textContent = String(todayCount || 0);
+
+      if (elLast && lastData?.[0]?.scanned_at) {
+        const d = new Date(lastData[0].scanned_at);
+        elLast.textContent = d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+      } else if (elLast) {
+        elLast.textContent = 'Niciun scan';
+      }
+    } catch {
+      if (elTotal) elTotal.textContent = '!';
+    }
+  }
+
+  fetchStats();
+  setInterval(fetchStats, 15000);
+</script>
