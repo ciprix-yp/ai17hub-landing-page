@@ -1,0 +1,2 @@
+# Redirect www → non-www
+https://www.ai17hub.ro/* https://ai17hub.ro/:splat 301

@@ -19,10 +19,15 @@ CREATE TABLE IF NOT EXISTS prelaunch_leads (
   utm_campaign    TEXT
 );
 
--- 2. Row Level Security — permite INSERT anonim (anon key), blochează citirea
+-- 2. Grants — acordă privilegii rolurilor Supabase
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT INSERT ON public.prelaunch_leads TO anon;
+GRANT SELECT, UPDATE, DELETE ON public.prelaunch_leads TO authenticated;
+
+-- 3. Row Level Security — strat suplimentar de protecție
 ALTER TABLE prelaunch_leads ENABLE ROW LEVEL SECURITY;
 
--- Permite oricui să insereze (formularul frontend)
+-- Permite oricui să insereze (formularul frontend folosește anon key)
 CREATE POLICY "Allow anonymous inserts"
   ON prelaunch_leads
   FOR INSERT
