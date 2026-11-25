@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleLead, MAX_BODY_BYTES, MAX_LEADS_PER_IP_PER_HOUR, notifyEmail, confirmEmail } from '../server/lead.js';
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { handleLead, MAX_BODY_BYTES, MAX_LEADS_PER_IP_PER_HOUR, CONSENT_VERSION, notifyEmail, confirmEmail, environmentOf, rateLimitKey } from '../server/lead.js';
 
 const ORIGIN = 'https://ai17hub.ro';
 const URL_ = `${ORIGIN}/api/lead`;
@@ -23,39 +25,38 @@ function makeRequest(body, { origin = ORIGIN, headers = {}, raw } = {}) {
   return new Request(URL_, { method: 'POST', headers: h, body: raw ?? JSON.stringify(body) });
 }
 
-/** D1 fals, in memorie: doar interogarile folosite de server. */
+/** D1 pe node:sqlite, cu migratia reala: interogarile serverului ruleaza pe SQL adevarat (numerotate ?1, ?2). */
 function fakeDb() {
-  const rows = [];
-  const db = {
-    rows,
+  const raw = new DatabaseSync(':memory:');
+  raw.exec(readFileSync(new URL('../migrations/0001_lead.sql', import.meta.url), 'utf8'));
+  return {
+    raw,
+    get rows() {
+      return raw.prepare('SELECT * FROM lead ORDER BY created_at, rowid').all().map((r) => ({ ...r }));
+    },
     prepare(sql) {
+      const st = raw.prepare(sql);
       return {
-        bind(...args) {
-          return {
-            async first() {
-              assert.match(sql, /SELECT COUNT/);
-              const [ip, since] = args;
-              return { n: rows.filter((r) => r.ip === ip && r.created_at > since).length };
-            },
-            async run() {
-              if (sql.startsWith('INSERT')) {
-                rows.push({ id: args[0], created_at: args[1], name: args[3], email: args[4], company: args[5], interest: args[6], ip: args[12], consent_version: args[11], consent_at: args[10] });
-              } else if (sql.includes('SET ip = NULL')) {
-                for (const r of rows) if (r.ip && r.created_at < args[0]) r.ip = null;
-              } else if (sql.includes('notify_sent_at')) {
-                rows.find((r) => r.id === args[0]).notify_sent_at = args[1];
-              } else if (sql.includes('confirm_sent_at')) {
-                rows.find((r) => r.id === args[0]).confirm_sent_at = args[1];
-              } else if (sql.includes('email_error')) {
-                rows.find((r) => r.id === args[0]).email_error = args[1];
-              }
-            },
-          };
-        },
+        bind: (...args) => ({
+          async first() {
+            return st.get(...args) ?? null;
+          },
+          async run() {
+            st.run(...args);
+            return {};
+          },
+        }),
       };
     },
   };
-  return db;
+}
+
+/** Rand pre-existent in jurnal (campurile NOT NULL au valori implicite). */
+function seed(db, row) {
+  const r = { environment: 'production', name: 'X', email: 'x@y.ro', interest: 'lab', consent_at: row.created_at, consent_version: 'v', ip: null, ...row };
+  db.raw
+    .prepare('INSERT INTO lead (id, created_at, environment, name, email, interest, consent_at, consent_version, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(r.id, r.created_at, r.environment, r.name, r.email, r.interest, r.consent_at, r.consent_version, r.ip);
 }
 
 /** fetch fals: siteverify si Resend. */
@@ -76,7 +77,8 @@ function setup(envOverrides = {}, fetchOpts = {}) {
   const fetchFn = fakeFetch(fetchOpts);
   const pendingWork = [];
   const env = { TURNSTILE_SECRET_KEY: 's', RESEND_API_KEY: 'k', LEAD_NOTIFY_TO: 'office@ai17hub.ro', LEADS_DB: db, ...envOverrides };
-  const deps = { fetchFn, now: () => NOW, randomId: () => 'id-1', waitUntil: (p) => pendingWork.push(p) };
+  let counter = 0;
+  const deps = { fetchFn, now: () => NOW, randomId: () => `id-${(counter += 1)}`, waitUntil: (p) => pendingWork.push(p) };
   const run = async (request) => {
     const res = await handleLead(request, env, deps);
     await Promise.all(pendingWork);
@@ -265,13 +267,14 @@ test('D1 care arunca: rate limit omis, cererea trece prin email', async () => {
     return { ...r, fetchFn: s.fetchFn };
   })();
   assert.equal(res.status, 200);
-  assert.equal(resendCalls(fetchFn).length, 2);
+  // fara jurnal nu se poate deduplica pe email: doar notificarea pleaca
+  assert.equal(resendCalls(fetchFn).length, 1);
 });
 
 test('IP-urile mai vechi de 24h devin NULL la fiecare insert', async () => {
   const { db, run } = setup();
-  db.rows.push({ id: 'old', created_at: '2026-11-24T08:00:00.000Z', ip: '198.51.100.1' });
-  db.rows.push({ id: 'recent', created_at: '2026-11-25T08:00:00.000Z', ip: '198.51.100.2' });
+  seed(db, { id: 'old', created_at: '2026-11-24T08:00:00.000Z', ip: '198.51.100.1' });
+  seed(db, { id: 'recent', created_at: '2026-11-25T08:00:00.000Z', ip: '198.51.100.2' });
   await run(makeRequest(validBody()));
   assert.equal(db.rows.find((r) => r.id === 'old').ip, null);
   assert.equal(db.rows.find((r) => r.id === 'recent').ip, '198.51.100.2');
@@ -279,10 +282,15 @@ test('IP-urile mai vechi de 24h devin NULL la fiecare insert', async () => {
 
 test('injectie de header: CR/LF din nume nu ajung in subiect', async () => {
   const { fetchFn, run } = setup();
-  const { res } = await run(makeRequest({ ...validBody(), name: 'Ion\r\nBcc: victima@example.com' }));
-  assert.equal(res.status, 200);
-  const notify = JSON.parse(resendCalls(fetchFn)[0].init.body);
-  assert.doesNotMatch(notify.subject, /[\r\n]/);
+  // numele cu caractere de control e respins de parseLead; subiectul si corpul raman pe un rand si pentru ce ajunge totusi la notifyEmail
+  const { res, json } = await run(makeRequest({ ...validBody(), name: 'Ion\r\nBcc: victima@example.com' }));
+  assert.equal(res.status, 400);
+  assert.equal(json.error, 'name');
+  assert.equal(fetchFn.calls.length, 0);
+  const direct = notifyEmail({ name: 'a\r\nb', interest: 'lab', environment: 'production', email: 'a@b.ro', company: 'c\r\nd\u2028e', consentAt: 'x', id: 'i' });
+  assert.doesNotMatch(direct.text.split('\n').filter((l) => /^(Nume|Email|Companie):/.test(l)).join(''), /[\r\u2028]/);
+  assert.match(direct.text, /Nume: a b\n/);
+  assert.match(direct.text, /Companie: c d e\n/);
   const { subject } = notifyEmail({ name: 'a\r\nBcc: x', interest: 'lab', environment: 'production', email: 'a@b.ro', company: null, consentAt: 'x', id: 'i' });
   assert.doesNotMatch(subject, /[\r\n]/);
   // un email cu CR/LF nu trece validarea
@@ -299,7 +307,7 @@ test('campuri extra ignorate: gdpr_timestamp/source/consent_version le pune serv
   const row = db.rows[0];
   assert.equal(row.id, 'id-1');
   assert.equal(row.consent_at, NOW.toISOString());
-  assert.equal(row.consent_version, 'confidentialitate-2026-11');
+  assert.equal(row.consent_version, 'confidentialitate-2026-05-23');
   assert.equal(row.ip, '203.0.113.7');
 });
 
@@ -330,4 +338,252 @@ test('in productie fara RESEND_API_KEY si fara D1 => 500', async () => {
 
 test('confirmarea nu depinde de input', () => {
   assert.deepEqual(confirmEmail(), confirmEmail());
+});
+
+const previewRequest = (body = validBody(), headers = {}) =>
+  new Request('https://preview.ai17hub-landing-page.pages.dev/api/lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://preview.ai17hub-landing-page.pages.dev', 'CF-Connecting-IP': '203.0.113.7', ...headers },
+    body: JSON.stringify(body),
+  });
+
+test('productia respinge hostname-ul example.com al cheii de test; previewul il accepta', async () => {
+  const prod = await setup({}, { captcha: { success: true, hostname: 'example.com' } }).run(makeRequest(validBody()));
+  assert.equal(prod.res.status, 403);
+  assert.equal(prod.json.error, 'captcha');
+  const preview = await setup({}, { captcha: { success: true, hostname: 'example.com' } }).run(previewRequest());
+  assert.equal(preview.res.status, 200);
+});
+
+test('siteverify non-200 sau exceptie => 500 server, fara salvare', async () => {
+  const a = setup();
+  a.fetchFn.calls.length = 0;
+  const non200 = async () => new Response('{}', { status: 503 });
+  const r1 = await handleLead(makeRequest(validBody()), a.env, { fetchFn: non200, now: () => NOW });
+  assert.equal(r1.status, 500);
+  const boom = async () => {
+    throw new Error('retea');
+  };
+  const r2 = await handleLead(makeRequest(validBody()), a.env, { fetchFn: boom, now: () => NOW });
+  assert.equal(r2.status, 500);
+  assert.equal(a.db.rows.length, 0);
+});
+
+test('fetch-urile externe au timeout (AbortSignal)', async () => {
+  const { fetchFn, run } = setup();
+  await run(makeRequest(validBody()));
+  assert.ok(fetchFn.calls.length >= 3);
+  for (const c of fetchFn.calls) assert.ok(c.init.signal instanceof AbortSignal, c.url);
+});
+
+test('functions/api/lead.js: alta metoda => 405 Allow POST; POST paseaza waitUntil', async () => {
+  const { onRequest, onRequestPost } = await import('../functions/api/lead.js');
+  const res405 = onRequest({});
+  assert.equal(res405.status, 405);
+  assert.equal(res405.headers.get('Allow'), 'POST');
+  assert.match(res405.headers.get('Content-Security-Policy'), /default-src 'none'/);
+
+  const realFetch = globalThis.fetch;
+  const fake = fakeFetch();
+  globalThis.fetch = fake;
+  try {
+    const waited = [];
+    const res = await onRequestPost({
+      request: makeRequest(validBody()),
+      env: { TURNSTILE_SECRET_KEY: 's', RESEND_API_KEY: 'k', LEADS_DB: fakeDb() },
+      waitUntil: (p) => waited.push(p),
+    });
+    assert.equal(res.status, 200);
+    assert.equal(waited.length, 1, 'emailurile merg prin waitUntil');
+    await Promise.all(waited);
+    assert.equal(resendCalls(fake).length, 2);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('www.ai17hub.ro e productie; alte hosturi sunt preview', async () => {
+  assert.equal(environmentOf('ai17hub.ro'), 'production');
+  assert.equal(environmentOf('www.ai17hub.ro'), 'production');
+  assert.equal(environmentOf('ai17hub-landing-page.pages.dev'), 'preview');
+  assert.equal(environmentOf('evil-ai17hub.ro'), 'preview');
+  const s = setup();
+  const req = new Request('https://www.ai17hub.ro/api/lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://www.ai17hub.ro', 'CF-Connecting-IP': '203.0.113.7' },
+    body: JSON.stringify(validBody()),
+  });
+  const { res } = await s.run(req);
+  assert.equal(res.status, 200);
+  assert.equal(s.db.rows[0].environment, 'production');
+  assert.equal(resendCalls(s.fetchFn).length, 2);
+});
+
+test('preview: doar notificarea interna, nicio confirmare catre vizitator', async () => {
+  for (const withDb of [true, false]) {
+    const s = setup(withDb ? {} : { LEADS_DB: undefined }, { captcha: { success: true, hostname: 'preview.ai17hub-landing-page.pages.dev' } });
+    const { res } = await s.run(previewRequest());
+    assert.equal(res.status, 200);
+    const mails = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body));
+    assert.equal(mails.length, 1, `cu D1: ${withDb}`);
+    assert.deepEqual(mails[0].to, ['office@ai17hub.ro']);
+    if (withDb) assert.equal(s.db.rows[0].confirm_sent_at, null);
+  }
+});
+
+test('o singura confirmare pe email la 24h (fara diferenta de litere); notificarea merge mereu', async () => {
+  const s = setup();
+  await s.run(makeRequest(validBody()));
+  const second = await s.run(makeRequest({ ...validBody(), email: 'ION@firmata.ro' }, { headers: { 'CF-Connecting-IP': '203.0.113.50' } }));
+  assert.equal(second.res.status, 200);
+  assert.equal(s.db.rows.length, 2, 'lead-ul se salveaza');
+  const mails = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body));
+  assert.equal(mails.length, 3, 'notify, confirm, apoi doar notify');
+  assert.deepEqual(mails.filter((m) => m.to[0] !== 'office@ai17hub.ro').length, 1);
+  assert.equal(s.db.rows[1].confirm_sent_at, null);
+  assert.ok(s.db.rows[1].notify_sent_at);
+  // alt email primeste confirmare
+  await s.run(makeRequest({ ...validBody(), email: 'alta@firmata.ro' }, { headers: { 'CF-Connecting-IP': '203.0.113.51' } }));
+  assert.equal(resendCalls(s.fetchFn).length, 5);
+});
+
+test('dupa 24h acelasi email primeste din nou confirmare', async () => {
+  const s = setup();
+  seed(s.db, { id: 'vechi', created_at: '2026-11-24T09:00:00.000Z', email: 'ion@firmata.ro' });
+  await s.run(makeRequest(validBody()));
+  const mails = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body));
+  assert.equal(mails.length, 2);
+});
+
+test('rateLimitKey: IPv4, IPv6 comprimat/expandat, /64, IPv4 mapat, invalide', () => {
+  assert.equal(rateLimitKey('203.0.113.7'), '203.0.113.7');
+  assert.equal(rateLimitKey('2001:db8::1'), '2001:0db8:0000:0000::/64');
+  assert.equal(rateLimitKey('2001:0DB8:0000:0000:0000:0000:0000:0001'), '2001:0db8:0000:0000::/64');
+  assert.equal(rateLimitKey('2001:db8:0:0:ffff:ffff:ffff:ffff'), '2001:0db8:0000:0000::/64');
+  assert.equal(rateLimitKey('2001:db8:1:2:3::9'), '2001:0db8:0001:0002::/64');
+  assert.equal(rateLimitKey('::1'), '0000:0000:0000:0000::/64');
+  assert.equal(rateLimitKey('::'), '0000:0000:0000:0000::/64');
+  assert.equal(rateLimitKey('::ffff:203.0.113.7'), '203.0.113.7');
+  assert.equal(rateLimitKey('2001:db8:1:2:3:4:5:6'), rateLimitKey('2001:db8:1:2::'));
+  assert.notEqual(rateLimitKey('2001:db8:1:2::1'), rateLimitKey('2001:db8:1:3::1'));
+  for (const bad of ['', 'abc', '1.2.3', '999.1.1.1', '1::2::3', '1:2:3:4:5:6:7:8:9', ':::', 'g::1', '1:2:3:4:5:6:7::8']) {
+    assert.equal(rateLimitKey(bad), null, bad);
+  }
+});
+
+test('rate limit pe IPv6: doua adrese din acelasi /64 se numara impreuna; D1 pastreaza cheia, nu IP-ul', async () => {
+  const s = setup();
+  for (let i = 1; i <= MAX_LEADS_PER_IP_PER_HOUR; i += 1) {
+    const ip = i % 2 ? `2001:db8:aaaa:bbbb::${i}` : `2001:0db8:aaaa:bbbb:${i}:0:0:1`;
+    const { res } = await s.run(makeRequest({ ...validBody(), email: `u${i}@firma.ro` }, { headers: { 'CF-Connecting-IP': ip } }));
+    assert.equal(res.status, 200, `cererea ${i}`);
+  }
+  assert.ok(s.db.rows.every((r) => r.ip === '2001:0db8:aaaa:bbbb::/64'));
+  const blocked = await s.run(makeRequest(validBody(), { headers: { 'CF-Connecting-IP': '2001:db8:aaaa:bbbb:9:9:9:9' } }));
+  assert.equal(blocked.res.status, 429);
+  const otherNet = await s.run(makeRequest(validBody(), { headers: { 'CF-Connecting-IP': '2001:db8:aaaa:cccc::1' } }));
+  assert.equal(otherNet.res.status, 200);
+});
+
+test('rate limit IPv4 stocheaza adresa ca atare', async () => {
+  const s = setup();
+  await s.run(makeRequest(validBody()));
+  assert.equal(s.db.rows[0].ip, '203.0.113.7');
+});
+
+test('caractere de control sau bidi in nume/companie => respins', async () => {
+  const bad = ['a\u0000b', 'a\tb', 'a\nb', 'a\u007fb', 'a\u0085b', 'a\u202eb', 'a\u2066b', 'a\u2028b', 'a\u200fb'];
+  for (const value of bad) {
+    const n = await setup().run(makeRequest({ ...validBody(), name: value }));
+    assert.equal(n.res.status, 400, JSON.stringify(value));
+    assert.equal(n.json.error, 'name');
+    const c = await setup().run(makeRequest({ ...validBody(), company: value }));
+    assert.equal(c.res.status, 400, JSON.stringify(value));
+    assert.equal(c.json.error, 'invalid');
+  }
+  const ok = await setup().run(makeRequest({ ...validBody(), name: 'Ștefan Țăranu-Îngâmfat', company: 'Ș&Ț SRL' }));
+  assert.equal(ok.res.status, 200);
+});
+
+test('corp mare trimis in bucati, fara Content-Length: 413 si fluxul e abandonat', async () => {
+  let cancelled = false;
+  let sent = 0;
+  const chunk = new TextEncoder().encode('x'.repeat(1024));
+  const stream = new ReadableStream({
+    pull(controller) {
+      sent += 1;
+      controller.enqueue(chunk);
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const request = new Request(URL_, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: ORIGIN },
+    body: stream,
+    duplex: 'half',
+  });
+  const s = setup();
+  const res = await handleLead(request, s.env, { fetchFn: s.fetchFn, now: () => NOW });
+  assert.equal(res.status, 413);
+  assert.ok(cancelled, 'fluxul a fost anulat');
+  assert.ok(sent < 64, `nu s-a citit tot (${sent} bucati)`);
+});
+
+test('corp valid trimis in bucati este acceptat', async () => {
+  const bytes = new TextEncoder().encode(JSON.stringify(validBody()));
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(bytes.slice(0, 20));
+      controller.enqueue(bytes.slice(20));
+      controller.close();
+    },
+  });
+  const request = new Request(URL_, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: ORIGIN, 'CF-Connecting-IP': '203.0.113.7' },
+    body: stream,
+    duplex: 'half',
+  });
+  const s = setup();
+  const res = await handleLead(request, s.env, { fetchFn: s.fetchFn, now: () => NOW, waitUntil: () => {} });
+  assert.equal(res.status, 200);
+});
+
+test('email_error: notificarea si confirmarea pe care le-au esuat se concateneaza cu prefix', async () => {
+  const s = setup({}, { resendOk: false });
+  await s.run(makeRequest(validBody()));
+  assert.match(s.db.rows[0].email_error, /^notify: Resend HTTP 500 \| confirm: Resend HTTP 500$/);
+  assert.equal(s.db.rows[0].notify_sent_at, null);
+  assert.equal(s.db.rows[0].confirm_sent_at, null);
+});
+
+test('email doar logat (fara RESEND_API_KEY, preview): nu se seteaza notify_sent_at/confirm_sent_at', async () => {
+  const s = setup({ RESEND_API_KEY: undefined }, { captcha: { success: true, hostname: 'preview.ai17hub-landing-page.pages.dev' } });
+  const { res } = await s.run(previewRequest());
+  assert.equal(res.status, 200);
+  assert.equal(s.db.rows[0].notify_sent_at, null);
+  assert.equal(s.db.rows[0].confirm_sent_at, null);
+  assert.equal(s.db.rows[0].email_error, null);
+});
+
+test('raspunsurile functiei au CSP restrictiv, HSTS si nosniff', async () => {
+  const { res } = await setup().run(makeRequest(null, { raw: 'x' }));
+  assert.equal(res.headers.get('Content-Security-Policy'), "default-src 'none'; frame-ancestors 'none'");
+});
+
+test('consent_version: politica publicata la 23 Mai 2026', () => {
+  assert.equal(CONSENT_VERSION, 'confidentialitate-2026-05-23');
+});
+
+test('migratia reala: tabela si indexurile; indexul de email serveste interogarea', () => {
+  const db = fakeDb();
+  const idx = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'lead'").all().map((r) => r.name);
+  assert.ok(idx.includes('lead_ip_created_idx'));
+  assert.ok(idx.includes('lead_email_created_idx'));
+  const plan = (sql, ...args) => db.raw.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args).map((r) => r.detail).join(' | ');
+  assert.match(plan('SELECT COUNT(*) FROM lead WHERE email = ?1 COLLATE NOCASE AND created_at > ?2', 'a', 'b'), /lead_email_created_idx/);
+  assert.match(plan('SELECT COUNT(*) FROM lead WHERE ip = ?1 AND created_at > ?2', 'a', 'b'), /lead_ip_created_idx/);
+  assert.throws(() => seed(db, { id: 'x', created_at: 'now', environment: 'staging' }), /CHECK/);
 });

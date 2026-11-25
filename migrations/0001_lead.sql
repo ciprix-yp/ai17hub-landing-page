@@ -14,10 +14,12 @@ CREATE TABLE lead (
   utm_campaign TEXT,
   consent_at TEXT NOT NULL,                  -- momentul acordului GDPR, pus de server
   consent_version TEXT NOT NULL,             -- versiunea politicii de confidentialitate acceptate
-  ip TEXT,                                   -- doar pentru rate limit; devine NULL dupa 24h
+  ip TEXT,                                   -- cheia de rate limit (IPv4 sau prefix IPv6 /64), nu adresa completa; serverul o pune pe NULL cand are peste 24h, la fiecare cerere care ajunge la rate limit
   notify_sent_at TEXT,
   confirm_sent_at TEXT,
-  email_error TEXT
+  email_error TEXT                           -- erori concatenate, cu prefix: "notify: ... | confirm: ..."
 );
 
 CREATE INDEX lead_ip_created_idx ON lead (ip, created_at);
+-- O singura confirmare pe email la 24h (interogare cu COLLATE NOCASE).
+CREATE INDEX lead_email_created_idx ON lead (email COLLATE NOCASE, created_at);
