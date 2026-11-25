@@ -1,12 +1,23 @@
-name = "ai17hub-website"
+name = "ai17hub-landing-page"
 compatibility_date = "2026-02-25"
 pages_build_output_dir = "./dist"
 
+# Cu un wrangler.toml care are pages_build_output_dir, dashboard-ul Cloudflare Pages il trateaza ca sursa de
+# adevar pentru binding-uri si variabile: ce lipseste de aici nu se mai poate seta din dashboard.
+# Variabile publice (fara secrete); valorile implicite din server/lead.js sunt aceleasi.
+[vars]
+LEAD_NOTIFY_TO = "office@ai17hub.ro"
+LEAD_FROM = "AI17 HUB <noreply@ai17hub.ro>"
+
+# Secrete (NU aici): TURNSTILE_SECRET_KEY, RESEND_API_KEY. Se pun din dashboard (Pages -> Settings -> Variables and Secrets)
+# sau cu `wrangler pages secret put <NUME> --project-name ai17hub-landing-page`. Local: .dev.vars (nu se comite)
+# sau `wrangler pages dev dist --binding TURNSTILE_SECRET_KEY=<cheie de test>`.
+
 # Jurnalul lead-urilor (functions/api/lead.js). Optional: fara binding, formularul merge doar prin email
-# (fara jurnal si fara rate limit; functia loghează un avertisment).
-# Activare (nu am database_id; un id inventat ar rupe build-ul Pages):
+# (fara jurnal, fara rate limit si fara confirmare deduplicata; functia loghează un avertisment).
+# Binding-ul D1 trebuie declarat AICI (nu doar in dashboard), dupa ce baza exista:
 #   1. wrangler d1 create ai17hub-leads --jurisdiction eu
-#   2. descomenteaza blocul de mai jos si pune database_id-ul primit
+#   2. descomenteaza blocul de mai jos si pune database_id-ul primit (un id inventat ar rupe build-ul Pages)
 #   3. wrangler d1 migrations apply ai17hub-leads --remote
 #
 # [[d1_databases]]
@@ -14,7 +25,3 @@ pages_build_output_dir = "./dist"
 # database_name = "ai17hub-leads"
 # database_id = "<database_id din pasul 1>"
 # migrations_dir = "migrations"
-
-# Secrete (Cloudflare Pages -> Settings -> Variables and Secrets): TURNSTILE_SECRET_KEY, RESEND_API_KEY.
-# Variabile: LEAD_NOTIFY_TO (implicit office@ai17hub.ro), LEAD_FROM (implicit AI17 HUB <noreply@ai17hub.ro>).
-# Local: .dev.vars (nu se comite).
