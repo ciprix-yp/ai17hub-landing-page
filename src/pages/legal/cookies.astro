@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const lastUpdated = '23 Mai 2026';
+---
+
+<BaseLayout
+  title="Politica de cookies · AI17 HUB"
+  description="Informații despre utilizarea cookie-urilor pe ai17hub.ro."
+>
+  <main id="main-content" style="background: #1C1C1C; padding-top: 100px; padding-bottom: 80px;">
+    <div class="section-container">
+      <div class="max-w-2xl mx-auto" style="color: #E8DDD0;">
+
+        <p class="eyebrow mb-4">LEGAL</p>
+        <h1 class="font-editorial text-sand mb-2" style="font-size: clamp(1.75rem, 4vw, 2.75rem);">
+          Politica de cookies
+        </h1>
+        <p class="font-sans text-grey mb-12" style="font-size: 0.875rem;">
+          Ultima actualizare: {lastUpdated}
+        </p>
+
+        <div class="font-sans text-grey space-y-8" style="font-size: 1rem; line-height: 1.8;">
+
+          <section>
+            <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">1. Ce sunt cookie-urile</h2>
+            <p>
+              Cookie-urile sunt fișiere text de mici dimensiuni stocate în browserul tău atunci
+              când vizitezi un site. Ele permit site-ului să rețină preferințele tale și să
+              funcționeze corect la vizite ulterioare.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">2. Ce cookie-uri folosim</h2>
+
+            <div class="mt-4 space-y-6">
+              <div class="pl-4" style="border-left: 2px solid #00E676;">
+                <h3 class="font-sans font-semibold text-sand mb-2">Cookie-uri esențiale (mereu active)</h3>
+                <p>
+                  Necesare pentru funcționarea de bază a site-ului: preferințele cookie-urilor
+                  (stocate local în <code style="color: #00E676;">localStorage</code>),
+                  sesiunea de tracking UTM (stocată în <code style="color: #00E676;">sessionStorage</code>
+                  pentru a preveni înregistrările duplicate).
+                  Nu necesită consimțământ, nu identifică utilizatorul.
+                </p>
+              </div>
+
+              <div class="pl-4" style="border-left: 2px solid rgba(255,255,255,0.2);">
+                <h3 class="font-sans font-semibold text-sand mb-2">Cookie-uri de analiză (cu consimțământ)</h3>
+                <p>
+                  Folosim <strong class="text-sand">Plausible Analytics</strong> — o soluție GDPR-friendly
+                  care nu utilizează cookie-uri de tracking și nu colectează date personale.
+                  Colectează date agregate și anonime despre vizite (țară, dispozitiv, pagini accesate).
+                  Nu există profil de utilizator individual.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">3. Ce nu folosim</h2>
+            <ul class="mt-3 space-y-1.5 ml-4">
+              <li style="list-style: disc;">Nu folosim cookie-uri de publicitate sau retargeting</li>
+              <li style="list-style: disc;">Nu integrăm Facebook Pixel, Google Ads sau platforme similare</li>
+              <li style="list-style: disc;">Nu utilizăm cookie-uri de rețele sociale (like/share)</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">4. Gestionarea preferințelor</h2>
+            <p>
+              La prima vizită, vei vedea un banner prin care poți accepta sau refuza cookie-urile
+              de analiză. Poți modifica preferința oricând din butonul <strong class="text-sand">„Preferințe cookies"</strong>
+              din footer-ul site-ului.
+            </p>
+            <p class="mt-3">
+              De asemenea, poți gestiona sau șterge cookie-urile direct din setările browserului tău.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">5. Contact</h2>
+            <p>
+              Pentru întrebări privind utilizarea cookie-urilor, ne poți contacta la
+              <a href="mailto:office@ai17hub.ro" class="text-accent hover:underline">office@ai17hub.ro</a>.
+            </p>
+          </section>
+
+        </div>
+
+        <div class="mt-14 pt-8" style="border-top: 1px solid rgba(255,255,255,0.08);">
+          <a href="/" class="font-sans text-accent text-sm hover:underline">← Înapoi la AI17 HUB</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
