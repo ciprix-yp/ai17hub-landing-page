@@ -1,0 +1,36 @@
+# Shift-left Stage 2 — commit gate.
+# Runs automatically through the global shift-left git hook.
+# Refresh pins with `pre-commit autoupdate`.
+# Model: You Protect website. Differences: no .semgrep/ house rules (no backend/D1/Hono here)
+# and no Python linters (no Python in this repo).
+repos:
+  # Generic hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Default limit (500 KB): the largest file in public/renders is ~484 KB, so no override is needed.
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-json
+      - id: end-of-file-fixer
+        exclude: ^(\.astro/|pnpm-lock\.yaml$)
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"] # two trailing spaces = line break in Markdown
+        exclude: ^(\.astro/|pnpm-lock\.yaml$)
+
+  # Secrets — block API keys, tokens and passwords before they reach history
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # SAST — injection, XSS, insecure crypto, etc. on changed files only
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.181.0
+    hooks:
+      - id: semgrep
+        args: ["--config", "p/default", "--config", "p/owasp-top-ten", "--error", "--skip-unknown-extensions"]
+        require_serial: true # one scan, one report (semgrep parallelises internally)
