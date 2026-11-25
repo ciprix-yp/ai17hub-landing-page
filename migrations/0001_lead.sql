@@ -7,6 +7,7 @@ CREATE TABLE lead (
   environment TEXT NOT NULL CHECK (environment IN ('production', 'preview')),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
+  email_key TEXT NOT NULL,                   -- email normalizat pentru dedupe: litere mici, fara +tag, gmail fara puncte
   company TEXT,
   interest TEXT NOT NULL CHECK (interest IN ('incubare', 'partener', 'evenimente', 'lab', 'curios')),
   utm_source TEXT,
@@ -21,5 +22,7 @@ CREATE TABLE lead (
 );
 
 CREATE INDEX lead_ip_created_idx ON lead (ip, created_at);
--- O singura confirmare pe email la 24h (interogare cu COLLATE NOCASE).
-CREATE INDEX lead_email_created_idx ON lead (email COLLATE NOCASE, created_at);
+-- O singura confirmare pe email_key la 24h (primul lead inserat in fereastra).
+CREATE INDEX lead_email_key_created_idx ON lead (email_key, created_at);
+-- Plafonul global de confirmari pe ora (COUNT pe confirm_sent_at).
+CREATE INDEX lead_confirm_sent_idx ON lead (confirm_sent_at);

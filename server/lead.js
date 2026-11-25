@@ -6,6 +6,8 @@ export const MAX_BODY_BYTES = 8 * 1024;
 export const MAX_LEADS_PER_IP_PER_HOUR = 5;
 export const IP_RETENTION_MS = 24 * 3_600_000;
 export const EMAIL_CONFIRM_WINDOW_MS = 24 * 3_600_000;
+/** Plafon global: peste atatea confirmari trimise in ultima ora, restul se omit (notificarea interna merge mereu). */
+export const MAX_CONFIRMATIONS_PER_HOUR = 30;
 // Data politicii de confidentialitate publicate (src/pages/legal/confidentialitate.astro: "23 Mai 2026").
 // Se actualizeaza cand Ciprian publica politica noua.
 export const CONSENT_VERSION = 'confidentialitate-2026-05-23';
@@ -16,8 +18,10 @@ const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/sit
 const RESEND_URL = 'https://api.resend.com/emails';
 const PRODUCTION_HOSTS = ['ai17hub.ro', 'www.ai17hub.ro'];
 const FETCH_TIMEOUT_MS = 8000;
-// Caractere de control si bidi (inclusiv separatoarele de linie Unicode): nu au ce cauta in nume/companie.
-const CONTROL_OR_BIDI = /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/;
+// Caractere de control, zero-width si bidi (inclusiv separatoarele de linie Unicode): nu au ce cauta in nume/companie.
+// TAB-ul se transforma intai in spatiu (TAB_RE), deci nu se respinge.
+const TAB_RE = /\t/g;
+const CONTROL_OR_BIDI = /[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]/;
 const DEFAULT_TO = 'office@ai17hub.ro';
 const DEFAULT_FROM = 'AI17 HUB <noreply@ai17hub.ro>';
 // Aceeasi regula ca in formular (src/components/CaptureForm.astro).
@@ -134,7 +138,7 @@ function trimmed(value) {
  */
 export function parseLead(payload) {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return { ok: false, error: 'invalid' };
-  const name = trimmed(payload.name);
+  const name = trimmed(payload.name).replace(TAB_RE, ' ');
   if (name.length < 1 || name.length > 120 || CONTROL_OR_BIDI.test(name)) return { ok: false, error: 'name' };
   const email = trimmed(payload.email);
   if (email.length > 254 || !EMAIL_REGEX.test(email)) return { ok: false, error: 'email' };
@@ -144,7 +148,7 @@ export function parseLead(payload) {
   let company = null;
   if (payload.company !== undefined && payload.company !== null) {
     if (typeof payload.company !== 'string') return { ok: false, error: 'invalid' };
-    company = payload.company.trim() || null;
+    company = payload.company.replace(TAB_RE, ' ').trim() || null;
     if (company !== null && (company.length > 200 || CONTROL_OR_BIDI.test(company))) return { ok: false, error: 'invalid' };
   }
   // Valorile UTM care nu respecta formatul se arunca (nu pierdem un lead din cauza unei campanii cu caractere ciudate).
@@ -232,8 +236,8 @@ async function sendEmail(env, fetchFn, { id, kind, to, replyTo, subject, text },
   return true;
 }
 
-/** Confirmarea catre vizitator pleaca doar din productie (pe preview nu exista relay catre adrese straine). */
-const confirmAllowed = (lead) => lead.environment === 'production' && !lead.skipConfirm;
+/** Confirmarea catre vizitator: decizia (productie, salvat, primul pe email_key, sub plafon) o ia shouldConfirm. */
+const confirmAllowed = (lead) => lead.sendConfirm === true && lead.environment === 'production';
 
 const sendNotify = (env, fetchFn, lead) =>
   sendEmail(
@@ -313,31 +317,68 @@ async function verifyTurnstile(env, fetchFn, token, ip, requestHostname) {
   return typeof result.hostname === 'string' && allowed.has(result.hostname) ? 'ok' : 'invalid';
 }
 
-async function recentLeadsFromIp(db, key, now) {
+/**
+ * Cheia de deduplicare a emailului: litere mici, fara punctul final al domeniului, fara sufixul +tag;
+ * pentru gmail.com/googlemail.com: fara puncte in partea locala si domeniu unificat gmail.com.
+ */
+export function normalizeEmail(email) {
+  const text = String(email).trim().toLowerCase();
+  const at = text.lastIndexOf('@');
+  if (at < 1) return text;
+  let local = text.slice(0, at);
+  let domain = text.slice(at + 1).replace(/\.+$/, '');
+  const plus = local.indexOf('+');
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    local = local.replaceAll('.', '');
+    domain = 'gmail.com';
+  }
+  return `${local}@${domain}`;
+}
+
+/**
+ * Salveaza lead-ul cu rate limit per IP ATOMIC: numaratoarea si INSERT-ul sunt o singura instructiune,
+ * deci cereri concurente nu pot depasi plafonul. @returns {Promise<'stored'|'rate'>}
+ */
+async function storeLead(db, lead, now) {
   const since = new Date(now().getTime() - 3_600_000).toISOString();
-  const row = await db.prepare('SELECT COUNT(*) AS n FROM lead WHERE ip = ?1 AND created_at > ?2').bind(key, since).first();
-  return Number(row?.n ?? 0);
-}
-
-/** Exista alt lead cu acelasi email (fara diferenta de litere) in ultimele 24h? Indexul lead_email_created_idx serveste interogarea. */
-async function hasRecentLeadWithEmail(db, email, now) {
-  const since = new Date(now().getTime() - EMAIL_CONFIRM_WINDOW_MS).toISOString();
-  const row = await db.prepare('SELECT COUNT(*) AS n FROM lead WHERE email = ?1 COLLATE NOCASE AND created_at > ?2').bind(email, since).first();
-  return Number(row?.n ?? 0) > 0;
-}
-
-async function storeLead(db, lead) {
-  await db
+  const result = await db
     .prepare(
-      `INSERT INTO lead (id, created_at, environment, name, email, company, interest, utm_source, utm_medium, utm_campaign,
+      `INSERT INTO lead (id, created_at, environment, name, email, email_key, company, interest, utm_source, utm_medium, utm_campaign,
                          consent_at, consent_version, ip)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+       WHERE (SELECT COUNT(*) FROM lead WHERE ip = ?14 AND created_at > ?15) < ?16`,
     )
     .bind(
-      lead.id, lead.createdAt, lead.environment, lead.name, lead.email, lead.company, lead.interest,
+      lead.id, lead.createdAt, lead.environment, lead.name, lead.email, lead.emailKey, lead.company, lead.interest,
       lead.utm_source, lead.utm_medium, lead.utm_campaign, lead.consentAt, CONSENT_VERSION, lead.ip,
+      since, MAX_LEADS_PER_IP_PER_HOUR,
     )
     .run();
+  return Number(result?.meta?.changes ?? 0) === 0 ? 'rate' : 'stored';
+}
+
+/**
+ * Se decide DUPA INSERT. Confirmarea pleaca doar daca: productie, lead-ul e primul inserat cu acest email_key in 24h
+ * (ordinea de inserare = rowid, deci cereri concurente nu pot primi amandoua) si plafonul global pe ora nu e depasit.
+ * Orice eroare => nu se confirma.
+ */
+async function shouldConfirm(db, lead, now) {
+  if (lead.environment !== 'production') return false;
+  try {
+    const since = new Date(new Date(lead.createdAt).getTime() - EMAIL_CONFIRM_WINDOW_MS).toISOString();
+    const first = await db
+      .prepare('SELECT id FROM lead WHERE email_key = ?1 AND created_at > ?2 ORDER BY rowid LIMIT 1')
+      .bind(lead.emailKey, since)
+      .first();
+    if (first?.id !== lead.id) return false;
+    const hourAgo = new Date(now().getTime() - 3_600_000).toISOString();
+    const sent = await db.prepare('SELECT COUNT(*) AS n FROM lead WHERE confirm_sent_at > ?1').bind(hourAgo).first();
+    return Number(sent?.n ?? 0) < MAX_CONFIRMATIONS_PER_HOUR;
+  } catch (error) {
+    console.error('lead: decizia de confirmare a esuat, nu se confirma', error);
+    return false;
+  }
 }
 
 async function purgeOldIps(db, now) {
@@ -406,26 +447,8 @@ export async function handleLead(request, env, deps = {}) {
       console.error('lead: curatarea IP-urilor vechi a esuat', error);
     }
   }
-  if (db && ipKey) {
-    try {
-      if ((await recentLeadsFromIp(db, ipKey, now)) >= MAX_LEADS_PER_IP_PER_HOUR) return fail('rate', 429);
-    } catch (error) {
-      console.error('lead: verificarea rate limit a esuat', error);
-    }
-  }
 
-  // O singura confirmare / 24h / email: daca verificarea esueaza, confirmarea se omite (nu risca relay).
-  let skipConfirm = false;
-  if (db) {
-    try {
-      skipConfirm = await hasRecentLeadWithEmail(db, parsed.lead.email, now);
-    } catch (error) {
-      console.error('lead: verificarea emailului recent a esuat', error);
-      skipConfirm = true;
-    }
-  }
-
-  // 7. Salvare + emailuri
+  // 7. Salvare (cu rate limit atomic) + emailuri
   const createdAt = now().toISOString();
   const lead = {
     ...parsed.lead,
@@ -433,14 +456,15 @@ export async function handleLead(request, env, deps = {}) {
     createdAt,
     consentAt: createdAt,
     environment: environmentOf(url.hostname),
+    emailKey: normalizeEmail(parsed.lead.email),
     ip: ipKey, // in D1 se pastreaza cheia (IPv4 / prefix IPv6 /64), nu adresa completa
-    skipConfirm,
+    sendConfirm: false,
   };
 
   let stored = false;
   if (db) {
     try {
-      await storeLead(db, lead);
+      if ((await storeLead(db, lead, now)) === 'rate') return fail('rate', 429);
       stored = true;
     } catch (error) {
       console.error('lead: inserarea in D1 a esuat', error);
@@ -448,20 +472,19 @@ export async function handleLead(request, env, deps = {}) {
   }
 
   if (stored) {
+    // Decizia de confirmare se ia dupa INSERT; fara D1 sau fara lead salvat nu se confirma niciodata.
+    lead.sendConfirm = await shouldConfirm(db, lead, now);
     waitUntil(sendBoth(env, fetchFn, lead, now));
     return jsonResponse({ ok: true });
   }
 
   // Fara jurnal, notificarea e singura urma: se trimite sincron, iar daca pica, cererea esueaza.
+  // Confirmarea catre vizitator se activeaza odata cu D1 (fara jurnal nu exista dedupe, plafon sau rate limit).
   try {
     await sendNotify(env, fetchFn, lead);
   } catch (error) {
     console.error('lead: notificarea a esuat si D1 nu e disponibil', error);
     return fail('server', 500);
-  }
-  // Confirmarea pleaca doar din productie (confirmAllowed); fara jurnal nu se poate deduplica pe email.
-  if (confirmAllowed(lead)) {
-    waitUntil(sendConfirm(env, fetchFn, lead).catch((error) => console.error('lead: confirmarea a esuat', error)));
   }
   return jsonResponse({ ok: true });
 }

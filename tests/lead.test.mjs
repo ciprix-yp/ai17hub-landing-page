@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
-import { handleLead, MAX_BODY_BYTES, MAX_LEADS_PER_IP_PER_HOUR, CONSENT_VERSION, notifyEmail, confirmEmail, environmentOf, rateLimitKey } from '../server/lead.js';
+import { handleLead, MAX_BODY_BYTES, MAX_LEADS_PER_IP_PER_HOUR, CONSENT_VERSION, MAX_CONFIRMATIONS_PER_HOUR, normalizeEmail, notifyEmail, confirmEmail, environmentOf, rateLimitKey } from '../server/lead.js';
 
 const ORIGIN = 'https://ai17hub.ro';
 const URL_ = `${ORIGIN}/api/lead`;
@@ -42,8 +42,8 @@ function fakeDb() {
             return st.get(...args) ?? null;
           },
           async run() {
-            st.run(...args);
-            return {};
+            const { changes } = st.run(...args);
+            return { meta: { changes } };
           },
         }),
       };
@@ -55,17 +55,20 @@ function fakeDb() {
 function seed(db, row) {
   const r = { environment: 'production', name: 'X', email: 'x@y.ro', interest: 'lab', consent_at: row.created_at, consent_version: 'v', ip: null, ...row };
   db.raw
-    .prepare('INSERT INTO lead (id, created_at, environment, name, email, interest, consent_at, consent_version, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(r.id, r.created_at, r.environment, r.name, r.email, r.interest, r.consent_at, r.consent_version, r.ip);
+    .prepare('INSERT INTO lead (id, created_at, environment, name, email, email_key, interest, consent_at, consent_version, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(r.id, r.created_at, r.environment, r.name, r.email, r.email_key ?? normalizeEmail(r.email), r.interest, r.consent_at, r.consent_version, r.ip);
 }
+
+/** Hostname exact al unui URL (fara potriviri de subsir). */
+const hostOf = (url) => new URL(String(url)).hostname;
 
 /** fetch fals: siteverify si Resend. */
 function fakeFetch({ captcha = { success: true, hostname: 'ai17hub.ro' }, resendOk = true } = {}) {
   const calls = [];
   const fn = async (url, init) => {
     calls.push({ url: String(url), init });
-    if (String(url).includes('siteverify')) return new Response(JSON.stringify(captcha), { status: 200 });
-    if (String(url).includes('api.resend.com')) return new Response('{}', { status: resendOk ? 200 : 500 });
+    if (hostOf(url) === 'challenges.cloudflare.com') return new Response(JSON.stringify(captcha), { status: 200 });
+    if (hostOf(url) === 'api.resend.com') return new Response('{}', { status: resendOk ? 200 : 500 });
     throw new Error(`fetch neasteptat: ${url}`);
   };
   fn.calls = calls;
@@ -87,7 +90,7 @@ function setup(envOverrides = {}, fetchOpts = {}) {
   return { db, fetchFn, env, run };
 }
 
-const resendCalls = (fetchFn) => fetchFn.calls.filter((c) => c.url.includes('api.resend.com'));
+const resendCalls = (fetchFn) => fetchFn.calls.filter((c) => hostOf(c.url) === 'api.resend.com');
 
 test('cerere valida: 200, rand in D1, notificare + confirmare', async () => {
   const { db, fetchFn, run } = setup();
@@ -206,7 +209,7 @@ test('Turnstile: hostname strain => 403 captcha; lipsa tokenului => 403 captcha'
 test('Turnstile: siteverify trimite secretul si remoteip', async () => {
   const { fetchFn, run } = setup();
   await run(makeRequest(validBody()));
-  const verify = fetchFn.calls.find((c) => c.url.includes('siteverify'));
+  const verify = fetchFn.calls.find((c) => hostOf(c.url) === 'challenges.cloudflare.com');
   const body = verify.init.body;
   assert.equal(body.get('secret'), 's');
   assert.equal(body.get('response'), 'tok');
@@ -234,12 +237,14 @@ test('rate limit: a 6-a cerere de la acelasi IP => 429', async () => {
   assert.equal(other.res.status, 200);
 });
 
-test('fara D1: cererea trece, notificarea se trimite sincron', async () => {
+test('fara D1: cererea trece, doar notificarea interna, sincron; nicio confirmare', async () => {
   const { fetchFn, run } = setup({ LEADS_DB: undefined });
   const { res, json } = await run(makeRequest(validBody()));
   assert.equal(res.status, 200);
   assert.deepEqual(json, { ok: true });
-  assert.equal(resendCalls(fetchFn).length, 2);
+  const mails = resendCalls(fetchFn).map((c) => JSON.parse(c.init.body));
+  assert.equal(mails.length, 1);
+  assert.deepEqual(mails[0].to, ['office@ai17hub.ro']);
 });
 
 test('fara D1 si emailul cade => 500 server', async () => {
@@ -492,7 +497,7 @@ test('rate limit IPv4 stocheaza adresa ca atare', async () => {
 });
 
 test('caractere de control sau bidi in nume/companie => respins', async () => {
-  const bad = ['a\u0000b', 'a\tb', 'a\nb', 'a\u007fb', 'a\u0085b', 'a\u202eb', 'a\u2066b', 'a\u2028b', 'a\u200fb'];
+  const bad = ['a\u0000b', 'a\nb', 'a\u007fb', 'a\u0085b', 'a\u202eb', 'a\u2066b', 'a\u2028b', 'a\u200fb', 'a\u061cb', 'a\u200bb', 'a\u200db', 'a\ufeffb'];
   for (const value of bad) {
     const n = await setup().run(makeRequest({ ...validBody(), name: value }));
     assert.equal(n.res.status, 400, JSON.stringify(value));
@@ -581,9 +586,165 @@ test('migratia reala: tabela si indexurile; indexul de email serveste interogare
   const db = fakeDb();
   const idx = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'lead'").all().map((r) => r.name);
   assert.ok(idx.includes('lead_ip_created_idx'));
-  assert.ok(idx.includes('lead_email_created_idx'));
+  assert.ok(idx.includes('lead_email_key_created_idx'));
+  assert.ok(idx.includes('lead_confirm_sent_idx'));
   const plan = (sql, ...args) => db.raw.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args).map((r) => r.detail).join(' | ');
-  assert.match(plan('SELECT COUNT(*) FROM lead WHERE email = ?1 COLLATE NOCASE AND created_at > ?2', 'a', 'b'), /lead_email_created_idx/);
+  assert.match(plan('SELECT id FROM lead WHERE email_key = ?1 AND created_at > ?2 ORDER BY rowid LIMIT 1', 'a', 'b'), /lead_email_key_created_idx/);
+  assert.match(plan('SELECT COUNT(*) FROM lead WHERE confirm_sent_at > ?1', 'a'), /lead_confirm_sent_idx/);
   assert.match(plan('SELECT COUNT(*) FROM lead WHERE ip = ?1 AND created_at > ?2', 'a', 'b'), /lead_ip_created_idx/);
   assert.throws(() => seed(db, { id: 'x', created_at: 'now', environment: 'staging' }), /CHECK/);
+});
+
+test('normalizeEmail: litere mici, fara punct final in domeniu, fara +tag, gmail fara puncte', () => {
+  assert.equal(normalizeEmail('Ion@Firmata.RO'), 'ion@firmata.ro');
+  assert.equal(normalizeEmail('ion+test@firmata.ro'), 'ion@firmata.ro');
+  assert.equal(normalizeEmail('ion@firmata.ro.'), 'ion@firmata.ro');
+  assert.equal(normalizeEmail('i.o.n@firmata.ro'), 'i.o.n@firmata.ro', 'punctele se pastreaza in afara gmail');
+  assert.equal(normalizeEmail('I.on.P+x@Gmail.com'), 'ionp@gmail.com');
+  assert.equal(normalizeEmail('ionp@googlemail.com.'), 'ionp@gmail.com');
+  assert.equal(normalizeEmail('+x@firmata.ro'), '+x@firmata.ro', 'partea locala nu ramane goala');
+});
+
+test('confirmare: variantele aceluiasi email (gmail, +tag, punct final) primesc o singura confirmare', async () => {
+  const s = setup();
+  const variants = ['ion.popescu@gmail.com', 'ionpopescu+a@gmail.com', 'IonPopescu@googlemail.com', 'i.o.n.popescu@gmail.com.'];
+  let n = 0;
+  for (const email of variants) {
+    n += 1;
+    await s.run(makeRequest({ ...validBody(), email }, { headers: { 'CF-Connecting-IP': `203.0.113.${n}` } }));
+  }
+  assert.equal(s.db.rows.length, 4);
+  assert.equal(new Set(s.db.rows.map((r) => r.email_key)).size, 1);
+  const toVisitor = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body)).filter((m) => m.to[0] !== 'office@ai17hub.ro');
+  assert.equal(toVisitor.length, 1);
+  assert.equal(s.db.rows.filter((r) => r.confirm_sent_at).length, 1);
+});
+
+test('plafon global: la 30 de confirmari trimise in ultima ora, urmatoarele se omit; notificarea merge', async () => {
+  assert.equal(MAX_CONFIRMATIONS_PER_HOUR, 30);
+  for (const [already, expectConfirm] of [[MAX_CONFIRMATIONS_PER_HOUR - 1, true], [MAX_CONFIRMATIONS_PER_HOUR, false]]) {
+    const s = setup();
+    for (let i = 0; i < already; i += 1) {
+      seed(s.db, { id: `c${i}`, created_at: '2026-11-25T09:30:00.000Z', email: `c${i}@x.ro`, ip: null });
+      s.db.raw.prepare('UPDATE lead SET confirm_sent_at = ? WHERE id = ?').run('2026-11-25T09:45:00.000Z', `c${i}`);
+    }
+    // o confirmare mai veche de o ora nu se numara
+    seed(s.db, { id: 'vechi', created_at: '2026-11-25T07:00:00.000Z', email: 'vechi@x.ro' });
+    s.db.raw.prepare('UPDATE lead SET confirm_sent_at = ? WHERE id = ?').run('2026-11-25T08:30:00.000Z', 'vechi');
+    await s.run(makeRequest({ ...validBody(), email: 'nou@firma.ro' }));
+    const mails = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body));
+    assert.equal(mails.filter((m) => m.to[0] === 'nou@firma.ro').length, expectConfirm ? 1 : 0, `deja ${already}`);
+    assert.equal(mails.filter((m) => m.to[0] === 'office@ai17hub.ro').length, 1);
+  }
+});
+
+test('INSERT esuat (D1 prezent): doar notificarea interna, nicio confirmare', async () => {
+  const real = fakeDb();
+  const failingInsert = {
+    ...real,
+    prepare: (sql) => {
+      if (sql.startsWith('INSERT')) throw new Error('D1 insert jos');
+      return real.prepare(sql);
+    },
+  };
+  const s = setup({ LEADS_DB: failingInsert });
+  const { res } = await s.run(makeRequest(validBody()));
+  assert.equal(res.status, 200);
+  const mails = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body));
+  assert.equal(mails.length, 1);
+  assert.deepEqual(mails[0].to, ['office@ai17hub.ro']);
+});
+
+test('eroare la decizia de confirmare => nu se confirma', async () => {
+  const real = fakeDb();
+  const brokenSelect = {
+    ...real,
+    prepare: (sql) => {
+      if (sql.includes('ORDER BY rowid')) throw new Error('D1 select jos');
+      return real.prepare(sql);
+    },
+  };
+  const s = setup({ LEADS_DB: brokenSelect });
+  await s.run(makeRequest(validBody()));
+  assert.equal(resendCalls(s.fetchFn).length, 1);
+  assert.equal(real.rows.length, 1);
+});
+
+/** D1 cu latenta aleatoare inainte si dupa fiecare instructiune: intercaleaza cererile concurente. */
+function slowDb(db) {
+  const jitter = () => new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
+  return {
+    raw: db.raw,
+    get rows() {
+      return db.rows;
+    },
+    prepare(sql) {
+      const stmt = db.prepare(sql);
+      return {
+        bind: (...args) => {
+          const bound = stmt.bind(...args);
+          return {
+            async first() {
+              await jitter();
+              const row = await bound.first();
+              await jitter();
+              return row;
+            },
+            async run() {
+              await jitter();
+              const result = await bound.run();
+              await jitter();
+              return result;
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
+function concurrentSetup() {
+  const db = fakeDb();
+  const fetchFn = fakeFetch();
+  const pending = [];
+  let counter = 0;
+  const env = { TURNSTILE_SECRET_KEY: 's', RESEND_API_KEY: 'k', LEAD_NOTIFY_TO: 'office@ai17hub.ro', LEADS_DB: slowDb(db) };
+  const deps = { fetchFn, now: () => NOW, randomId: () => `c-${(counter += 1)}`, waitUntil: (p) => pending.push(p) };
+  const send = async (request) => (await handleLead(request, env, deps)).status;
+  return { db, fetchFn, pending, send };
+}
+
+test('concurenta: maxim 5 randuri per IP chiar cu cereri intercalate', async () => {
+  const s = concurrentSetup();
+  const statuses = await Promise.all(
+    Array.from({ length: 14 }, (_, i) => s.send(makeRequest({ ...validBody(), email: `u${i}@firma.ro` }))),
+  );
+  await Promise.all(s.pending);
+  assert.equal(statuses.filter((c) => c === 200).length, MAX_LEADS_PER_IP_PER_HOUR);
+  assert.equal(statuses.filter((c) => c === 429).length, 14 - MAX_LEADS_PER_IP_PER_HOUR);
+  assert.equal(s.db.rows.length, MAX_LEADS_PER_IP_PER_HOUR);
+});
+
+test('concurenta: o singura confirmare per email_key, chiar cu cereri intercalate', async () => {
+  for (let round = 0; round < 5; round += 1) {
+    const s = concurrentSetup();
+    const emails = ['a.b@gmail.com', 'ab+x@gmail.com', 'AB@googlemail.com', 'a.b@gmail.com.', 'ab@gmail.com', 'a.b+y@gmail.com'];
+    const statuses = await Promise.all(
+      emails.map((email, i) => s.send(makeRequest({ ...validBody(), email }, { headers: { 'CF-Connecting-IP': `203.0.113.${10 + i}` } }))),
+    );
+    await Promise.all(s.pending);
+    assert.ok(statuses.every((c) => c === 200));
+    assert.equal(s.db.rows.length, emails.length);
+    const toVisitor = resendCalls(s.fetchFn).map((c) => JSON.parse(c.init.body)).filter((m) => m.to[0] !== 'office@ai17hub.ro');
+    assert.equal(toVisitor.length, 1, `runda ${round}`);
+    assert.equal(resendCalls(s.fetchFn).length, emails.length + 1, 'cate o notificare + o confirmare');
+  }
+});
+
+test('TAB in nume/companie se transforma in spatiu (nu se respinge)', async () => {
+  const s = setup();
+  const { res } = await s.run(makeRequest({ ...validBody(), name: 'Ion\tPopescu', company: 'A\tB SRL' }));
+  assert.equal(res.status, 200);
+  assert.equal(s.db.rows[0].name, 'Ion Popescu');
+  assert.equal(s.db.rows[0].company, 'A B SRL');
 });
