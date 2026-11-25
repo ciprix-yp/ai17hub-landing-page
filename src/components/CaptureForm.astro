@@ -39,6 +39,7 @@
             name="name"
             placeholder="Ion Popescu"
             class="form-input"
+            maxlength="120"
             required
             autocomplete="name"
             aria-required="true"
@@ -54,6 +55,7 @@
             name="email"
             placeholder="ion@firmata.ro"
             class="form-input"
+            maxlength="254"
             required
             autocomplete="email"
             aria-required="true"
@@ -100,6 +102,7 @@
             name="company"
             placeholder="MASSTUDIO SRL"
             class="form-input"
+            maxlength="200"
             autocomplete="organization"
           />
         </div>
@@ -301,6 +304,9 @@
     gdpr: 'Este necesar acordul pentru prelucrarea datelor.',
   };
 
+  // Câmpul care primește focusul când serverul respinge o valoare (interest are radio-uri, fără focus unic).
+  const FIELD_IDS: Record<string, string> = { name: 'field-name', email: 'field-email', gdpr: 'field-gdpr' };
+
   const honeypot = form?.querySelector<HTMLInputElement>('input[name="website"]');
 
   // Cloudflare Turnstile: scriptul se încarcă la prima interacțiune cu formularul (nu la fiecare vizită).
@@ -468,10 +474,12 @@
         } catch {
           // răspuns fără JSON: mesajul tehnic de mai jos
         }
-        const message = FIELD_MESSAGES[code];
+        const message = Object.hasOwn(FIELD_MESSAGES, code) ? FIELD_MESSAGES[code] : undefined;
         resetTurnstile();
         if (message) {
           showError(message);
+          const fieldId = FIELD_IDS[code];
+          if (fieldId) document.getElementById(fieldId)?.focus();
         } else {
           throw new Error(`Eroare server: ${res.status} ${code}`);
         }

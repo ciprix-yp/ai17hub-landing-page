@@ -30,7 +30,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
     <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -- canonical link nu incarca resurse; SRI nu se aplica -->
-    <link rel="canonical" href={canonicalURL} />
+    {!noindex && <link rel="canonical" href={canonicalURL} />}
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
