@@ -1,5 +1,6 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "exclude": ["dist", "functions", "server", "tests"],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

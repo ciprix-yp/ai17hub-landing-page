@@ -4,28 +4,33 @@ const floors = [
     id: 'parter',
     label: 'Parter',
     title: 'Parter — Public, vibrant, punct de întâlnire.',
-    body: 'Bistro · Recepție · Lobby · Sala Teatru (65 locuri) · Atelier 3D + Plotter. Deschis publicului în zilele de evenimente.',
-    image: '/renders/render-03.jpg',
+    body: 'Bistro · Recepție · Lobby · 2 Săli multifuncționale (65–100 locuri) · Atelier 3D + Plotter. Deschis publicului în zilele de evenimente.',
+    images: ['/renders/parter-01.jpg', '/renders/parter-02.jpg', '/renders/parter-03.jpg'],
     imageAlt: 'Parter AI17 HUB — zona publică și recepție',
-    specs: ['Sala Teatru: 65 locuri', 'Bistro: 30 locuri', 'Atelier 3D: 20 persoane'],
+    specs: ['2 Săli multifuncționale (65–100 locuri)', 'Bistro: 60 locuri', 'Atelier 3D și machetare', 'Echipamente de scanare'],
   },
   {
     id: 'supanta',
     label: 'Supantă',
-    title: 'Supantă — Privată, productivă, nucleul comunității.',
-    body: 'Birouri private (1–12 persoane) · Săli de ședință · Library · Sala Mare conferințe (90 locuri). Acces card 24/7 pentru incubați.',
-    image: '/renders/render-08.jpg',
+    title: 'Supantă — Privată, productivă.',
+    body: '',
+    images: [
+      '/renders/supanta-01.jpg', '/renders/supanta-02.jpg', '/renders/supanta-03.jpg',
+      '/renders/supanta-04.jpg', '/renders/supanta-05.jpg', '/renders/supanta-06.jpg',
+      '/renders/supanta-07.jpg', '/renders/supanta-08.jpg', '/renders/supanta-09.jpg',
+      '/renders/supanta-10.jpg',
+    ],
     imageAlt: 'Supantă AI17 HUB — birouri private și săli de ședință',
-    specs: ['Sala Mare: 90 locuri', '4 birouri private', 'Acces 24/7'],
+    specs: ['Săli de ședință', 'Zonă de relaxare', 'Spațiu de joacă pentru copii', '4 birouri private (2–12 persoane)', 'Acces 24/7'],
   },
   {
     id: 'mansarda',
     label: 'Mansardă',
-    title: 'Mansardă — Luminoasă, deschisă, laboratorul.',
-    body: 'Open space 30 posturi · Lab BIM/LIDAR · Grinzi de lemn originale 1906 · Lumină zenitală Velux · Stații Workstation NVIDIA RTX.',
-    image: '/renders/render-01.jpg',
+    title: 'Mansardă — Luminoasă, deschisă. Inima comunității.',
+    body: 'Open space 36 posturi',
+    images: ['/renders/mansarda-01.jpg', '/renders/mansarda-02.jpg', '/renders/mansarda-03.jpg'],
     imageAlt: 'Mansardă AI17 HUB — open space cu grinzi originale din 1906',
-    specs: ['30 posturi coworking', '8 stații Workstation RTX', 'Scanner LIDAR Leica'],
+    specs: ['Lab BIM/LIDAR', 'Grinzi de lemn originale 1906', 'Birouri individuale (1–3 locuri)', 'Săli de ședințe', 'Bibliotecă de produse — exclusiv parteneri'],
   },
 ];
 ---
@@ -91,9 +96,11 @@ const floors = [
             <h3 class="font-sans font-bold text-sand mb-4" style="font-size: 1.375rem; line-height: 1.3;">
               {floor.title}
             </h3>
-            <p class="font-sans text-grey mb-8" style="font-size: 1rem; line-height: 1.7;">
-              {floor.body}
-            </p>
+            {floor.body && (
+              <p class="font-sans text-grey mb-8" style="font-size: 1rem; line-height: 1.7;">
+                {floor.body}
+              </p>
+            )}
             <ul class="space-y-2">
               {floor.specs.map((spec) => (
                 <li class="flex items-center gap-3 font-sans text-grey text-sm">
@@ -104,15 +111,22 @@ const floors = [
             </ul>
           </div>
 
-          <!-- Imagine -->
-          <div class="relative overflow-hidden" style="min-height: 320px;">
-            <img
-              src={floor.image}
-              alt={floor.imageAlt}
-              class="w-full h-full object-cover"
-              loading="lazy"
-              data-dynamic-img
-            />
+          <!-- Floor slideshow — poze strict din etajul respectiv -->
+          <div
+            class="floor-slideshow relative overflow-hidden"
+            data-floor-id={floor.id}
+            style="min-height: 320px;"
+          >
+            {floor.images.map((src, j) => (
+              <img
+                src={src}
+                alt={j === 0 ? floor.imageAlt : ''}
+                class="floor-slide absolute inset-0 w-full h-full object-cover"
+                style={`opacity: ${j === 0 ? 1 : 0}; transition: opacity 0.7s ease;`}
+                loading={i === 0 && j === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            ))}
           </div>
         </div>
       ))}
@@ -129,19 +143,65 @@ const floors = [
 </section>
 
 <script>
-  // Tab switching
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Per-floor slideshows ─────────────────────────────────────────────────
+  const floorTimers = new Map<string, ReturnType<typeof setInterval>>();
+  const floorCurrentIndex = new Map<string, number>();
+
+  function startFloorRotator(floorId: string) {
+    if (reducedMotion) return;
+
+    const slideshow = document.querySelector<HTMLElement>(
+      `.floor-slideshow[data-floor-id="${floorId}"]`
+    );
+    if (!slideshow) return;
+
+    const slides = Array.from(
+      slideshow.querySelectorAll<HTMLImageElement>('.floor-slide')
+    );
+    if (slides.length <= 1) return;
+
+    let idx = floorCurrentIndex.get(floorId) ?? 0;
+
+    const timer = setInterval(() => {
+      slides[idx].style.opacity = '0';
+      idx = (idx + 1) % slides.length;
+      slides[idx].style.opacity = '1';
+      floorCurrentIndex.set(floorId, idx);
+    }, 3800);
+
+    floorTimers.set(floorId, timer);
+  }
+
+  function stopFloorRotator(floorId: string) {
+    const timer = floorTimers.get(floorId);
+    if (timer !== undefined) {
+      clearInterval(timer);
+      floorTimers.delete(floorId);
+    }
+  }
+
+  // Start rotator for initially active floor
+  startFloorRotator('parter');
+
+  // ── Tab switching ────────────────────────────────────────────────────────
   const tabs = document.querySelectorAll<HTMLButtonElement>('.spaces-tab');
   const panels = document.querySelectorAll<HTMLElement>('.spaces-panel');
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
-      const floorId = tab.dataset.floor!;
+      const newFloorId = tab.dataset.floor!;
 
-      // Deactivate all
+      // Find which floor was previously active and stop its rotator
       tabs.forEach((t) => {
+        if (t.getAttribute('aria-selected') === 'true' && t !== tab) {
+          stopFloorRotator(t.dataset.floor!);
+        }
+
         t.style.color = '#888888';
         t.setAttribute('aria-selected', 'false');
-        const indicator = t.querySelector('.spaces-tab-indicator') as HTMLElement | null;
+        const indicator = t.querySelector<HTMLElement>('.spaces-tab-indicator');
         if (indicator) indicator.style.opacity = '0';
       });
 
@@ -150,13 +210,13 @@ const floors = [
         p.style.opacity = '0';
       });
 
-      // Activate selected
+      // Activate selected tab
       tab.style.color = '#E8DDD0';
       tab.setAttribute('aria-selected', 'true');
-      const activeIndicator = tab.querySelector('.spaces-tab-indicator') as HTMLElement | null;
+      const activeIndicator = tab.querySelector<HTMLElement>('.spaces-tab-indicator');
       if (activeIndicator) activeIndicator.style.opacity = '1';
 
-      const activePanel = document.getElementById(`panel-${floorId}`) as HTMLElement;
+      const activePanel = document.getElementById(`panel-${newFloorId}`);
       if (activePanel) {
         activePanel.style.display = 'grid';
         requestAnimationFrame(() => {
@@ -164,15 +224,18 @@ const floors = [
           activePanel.style.opacity = '1';
         });
       }
+
+      // Start rotator for newly active floor
+      startFloorRotator(newFloorId);
     });
   });
 
-  // Reveal on scroll
+  // ── Reveal on scroll ─────────────────────────────────────────────────────
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
   gsap.registerPlugin(ScrollTrigger);
 
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (!reducedMotion) {
     gsap.utils.toArray<HTMLElement>('#spatii .reveal-s').forEach((el) => {
       gsap.fromTo(
         el,

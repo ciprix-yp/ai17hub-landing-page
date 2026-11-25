@@ -1,0 +1,134 @@
+---
+const statusPhotos = [
+  '/renders/status-01.jpg',
+  '/renders/status-02.jpg',
+  '/renders/status-03.jpg',
+  '/renders/status-04.jpg',
+  '/renders/status-05.jpg',
+  '/renders/status-06.jpg',
+];
+---
+
+<section id="jurnal" class="bg-charcoal py-20 md:py-28" aria-labelledby="journal-title">
+  <div class="section-container">
+
+    <div class="mb-12 text-center reveal-j">
+      <p class="eyebrow mb-4">JURNALUL DE PROIECT</p>
+      <h2
+        id="journal-title"
+        class="font-editorial text-sand"
+        style="font-size: clamp(1.75rem, 4vw, 2.75rem);"
+      >
+        Șantierul în timp real.
+      </h2>
+      <p class="font-sans text-grey mt-4 max-w-lg mx-auto" style="font-size: 1rem; line-height: 1.65;">
+        Urmărește transformarea clădirii din 1906 pas cu pas.
+      </p>
+    </div>
+
+    <!-- Slideshow rapid status -->
+    <div class="reveal-j relative mx-auto overflow-hidden" style="max-width: 860px; aspect-ratio: 16/9;">
+      {statusPhotos.map((src, i) => (
+        <img
+          src={src}
+          alt={`Jurnal șantier AI17 HUB — foto ${i + 1}`}
+          class="journal-slide absolute inset-0 w-full h-full object-cover"
+          style={`opacity: ${i === 0 ? 1 : 0}; transition: opacity 0.5s ease;`}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+        />
+      ))}
+
+      <!-- Counter indicator -->
+      <div
+        class="absolute bottom-4 right-4 font-sans text-sand font-semibold"
+        style="font-size: 0.75rem; letter-spacing: 0.12em; background: rgba(28,28,28,0.75); padding: 4px 10px;"
+        aria-hidden="true"
+      >
+        <span id="journal-current">1</span> / {statusPhotos.length}
+      </div>
+
+      <!-- Dot navigation -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2" aria-hidden="true">
+        {statusPhotos.map((_, i) => (
+          <span
+            class="journal-dot block rounded-full"
+            style={`width: 6px; height: 6px; background: ${i === 0 ? '#00E676' : 'rgba(255,255,255,0.35)'}; transition: background 0.3s;`}
+          />
+        ))}
+      </div>
+    </div>
+
+    <!-- CTA social -->
+    <div class="mt-10 text-center reveal-j">
+      <p class="font-sans text-grey mb-4" style="font-size: 0.9375rem;">
+        Mai multe actualizări pe
+      </p>
+      <div class="flex items-center justify-center gap-6">
+        <a
+          href="https://www.instagram.com/stebingararhitectstudio/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-sans font-semibold text-accent text-sm hover:underline transition-colors"
+        >
+          Instagram →
+        </a>
+        <a
+          href="https://www.linkedin.com/company/stebingar-arhitect-studio"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-sans font-semibold text-accent text-sm hover:underline transition-colors"
+        >
+          LinkedIn →
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  const slides = Array.from(document.querySelectorAll<HTMLImageElement>('.journal-slide'));
+  const dots = Array.from(document.querySelectorAll<HTMLElement>('.journal-dot'));
+  const currentEl = document.getElementById('journal-current');
+
+  if (slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let idx = 0;
+
+    setInterval(() => {
+      slides[idx].style.opacity = '0';
+      if (dots[idx]) dots[idx].style.background = 'rgba(255,255,255,0.35)';
+
+      idx = (idx + 1) % slides.length;
+
+      slides[idx].style.opacity = '1';
+      if (dots[idx]) dots[idx].style.background = '#00E676';
+      if (currentEl) currentEl.textContent = String(idx + 1);
+    }, 2200);
+  }
+
+  // Reveal scroll
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    gsap.utils.toArray<HTMLElement>('#jurnal .reveal-j').forEach((el) => {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.65,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        }
+      );
+    });
+  } else {
+    document.querySelectorAll<HTMLElement>('#jurnal .reveal-j').forEach((el) => {
+      el.style.opacity = '1';
+    });
+  }
+</script>

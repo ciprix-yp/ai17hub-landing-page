@@ -1,6 +1,6 @@
 # AI17 HUB — Landing Page Pre-Lansare
 
-**Stack**: Astro 5 · Tailwind 4 · GSAP · Lenis · Supabase · Cloudflare Pages  
+**Stack**: Astro 7 · Tailwind 4 · GSAP · Lenis · Cloudflare Pages (Functions + D1 opțional) · Resend  
 **Domeniu**: ai17hub.ro  
 **Dev server**: http://localhost:4321
 
@@ -12,9 +12,9 @@
 # 1. Instalare dependențe
 pnpm install
 
-# 2. Configurare variabile de mediu
-cp .env.example .env
-# Completează PUBLIC_SUPABASE_URL și PUBLIC_SUPABASE_ANON_KEY
+# 2. Variabile de mediu: .env.example listează doar numele; valorile se pun în Keychain
+#    secret set ai17hub-site <VAR>
+#    secret run ai17hub-site -- pnpm dev
 
 # 3. Dev server
 pnpm dev
@@ -22,37 +22,66 @@ pnpm dev
 # 4. TypeScript check
 pnpm astro check
 
-# 5. Build producție
+# 5. Build producție (necesită PUBLIC_TURNSTILE_SITE_KEY; local de test: 1x00000000000000000000AA)
 pnpm build
+
+# 6. Teste (formular + gardă deploy; folosesc node:sqlite, fără flag-uri pe Node 22.23.4)
+node --test tests/lead.test.mjs tests/check-deploy.test.mjs tests/guard-build.test.mjs
+
+# 7. Înainte de deploy, în ordinea asta (aceeași cheie reală în env la ambele):
+#    build cu cheia reală -> pnpm check:deploy -> deploy
+secret run ai17hub-site -- pnpm build
+secret run ai17hub-site -- pnpm check:deploy
 ```
 
----
-
-## Configurare Supabase
-
-1. Crează un cont la [supabase.com](https://supabase.com) (free tier)
-2. Crează un proiect nou (region: EU Central)
-3. În **SQL Editor**, rulează tot conținutul din `SUPABASE_SETUP.sql`
-4. Din **Settings → API**, copiază:
-   - `Project URL` → `PUBLIC_SUPABASE_URL` în `.env`
-   - `anon public` key → `PUBLIC_SUPABASE_ANON_KEY` în `.env`
+`pnpm check:deploy` verifică artefactul, nu doar variabila: cade dacă `dist/_astro/*.js` conține
+cheia de test Cloudflare sau nu conține valoarea din `PUBLIC_TURNSTILE_SITE_KEY` (nu afișează chei).
 
 ---
 
-## Deploy pe Cloudflare Pages
+## Formularul de contact
 
-1. Push repo pe GitHub
-2. În Cloudflare Pages: **Create Project → Connect to Git**
-3. Build settings:
-   - **Framework**: Astro
-   - **Build command**: `pnpm build`
-   - **Output directory**: `dist`
-4. Environment variables (Settings → Environment Variables):
-   ```
-   PUBLIC_SUPABASE_URL = https://your-project.supabase.co
-   PUBLIC_SUPABASE_ANON_KEY = your-anon-key
-   ```
-5. Configurează domeniu `ai17hub.ro` în **Custom domains**
+Formularul (`src/components/CaptureForm.astro`) trimite JSON la `POST /api/lead`
+(Cloudflare Pages Function: `functions/api/lead.js`, logica în `server/lead.js`).
+Serverul verifică Origin, honeypot, validează câmpurile, verifică Cloudflare Turnstile,
+aplică rate limit (dacă există D1; cheia e IPv4 sau prefixul IPv6 /64), salvează în D1 (opțional)
+și trimite prin Resend o notificare către echipă. Confirmarea către vizitator se activează odată cu D1:
+pleacă doar din producție (`ai17hub.ro` / `www.ai17hub.ro`), doar dacă lead-ul a fost salvat, o singură
+dată la 24h pe același email normalizat (litere mici, fără `+tag`, gmail fără puncte) și cel mult 30 pe oră
+în total. Fără D1 (sau dacă salvarea cade) pleacă doar notificarea internă. Rate limit-ul per IP e atomic
+(INSERT condiționat), deci cererile concurente nu îl pot depăși.
+
+Variabile (nume în `.env.example`):
+
+- build: `PUBLIC_TURNSTILE_SITE_KEY`
+- runtime, secrete (dashboard sau `wrangler pages secret put`): `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`
+- runtime, publice (în `wrangler.toml`, secțiunea `[vars]`): `LEAD_NOTIFY_TO`, `LEAD_FROM`
+
+Numele proiectului Pages este `ai17hub-landing-page` (`wrangler.toml`). Cu un `wrangler.toml` care are
+`pages_build_output_dir`, dashboard-ul Pages îl tratează ca sursă de adevăr pentru binding-uri:
+jurnalul D1 (`LEADS_DB`, `migrations/0001_lead.sql`) trebuie declarat în `wrangler.toml` după
+`wrangler d1 create`, nu doar în dashboard. Până atunci e dezactivat; pașii sunt în `wrangler.toml`.
+Local: `.dev.vars` (nu se comite) sau `wrangler pages dev dist --binding TURNSTILE_SECRET_KEY=<cheie de test>`.
+
+---
+
+## Build pe Cloudflare Pages (de setat de Ciprian)
+
+`pnpm build` rulează întâi `scripts/guard-build.mjs`. Doar pe Cloudflare Pages, la producție
+(`CF_PAGES=1` și `CF_PAGES_BRANCH=main`), build-ul pică dacă `PUBLIC_TURNSTILE_SITE_KEY` lipsește sau e cheia
+de test. Local, în CI GitHub, pe preview și pe alte branch-uri nu face nimic.
+
+De setat în dashboard: Pages -> proiectul `ai17hub-landing-page` -> Settings -> Variables and Secrets ->
+variabila de **build** `PUBLIC_TURNSTILE_SITE_KEY` (cheia publică reală), la mediul **Production**.
+(`[vars]` din `wrangler.toml` sunt variabile de runtime, nu de build.) Până o setezi, build-ul de producție
+pică intenționat, iar site-ul vechi rămâne live.
+
+---
+
+## Deploy
+
+Deploy-ul se face manual, cu `wrangler pages deploy dist`, doar cu acordul lui Ciprian
+(după `pnpm build` și `pnpm check:deploy`).
 
 ---
 
@@ -70,15 +99,19 @@ src/
 │   ├── FourVerticals.astro    # Grid 2×2 — cele 4 trasee
 │   ├── Spaces.astro           # Tab-uri Parter/Supantă/Mansardă
 │   ├── Timeline1906.astro     # GSAP ScrollTrigger timeline orizontal
-│   ├── CaptureForm.astro      # Formular captare → Supabase
+│   ├── CaptureForm.astro      # Formular captare → /api/lead
 │   ├── MassStudio.astro       # Social proof + galerie proiecte
-│   ├── FOMOEvent.astro        # Banner eveniment 24 Mai 2026
 │   ├── Footer.astro           # 4 coloane + bara finală
 │   ├── WhatsAppButton.astro   # Floating button → Anca Stebingăr
 │   ├── CookieBanner.astro     # GDPR consent banner
 │   └── InfiniteLine.astro     # SVG linia verde animată
 └── pages/
-    └── index.astro            # Pagina principală
+    ├── index.astro            # Pagina principală
+    └── 404.astro              # Pagina 404
+functions/api/lead.js          # POST /api/lead (JS pur ESM)
+server/lead.js                 # Logica formularului (testabilă)
+migrations/                    # Schema D1
+public/fonts/                  # Barlow self-hosted (SIL OFL, vezi OFL.txt)
 ```
 
 ---
@@ -93,19 +126,8 @@ Utilizatorul poate modifica mesajul înainte de trimitere.
 
 ---
 
-## UTM tracking (pentru QR de la FOMO)
-
-Link cu UTM pentru slide-ul lui Mihai:
-```
-https://ai17hub.ro?utm_source=fomo&utm_medium=qr&utm_campaign=qr-fomo-24mai
-```
-
----
-
 ## Faza 2 (după lansare)
 
 - [ ] Conectare n8n webhook pentru email automat la fiecare lead
 - [ ] Adăugare pagini complete (Incubare, Parteneri, Lab, Evenimente)
 - [ ] Chatbot AI (după EU AI Act — Septembrie 2026)
-- [ ] Fonturi Barlow self-hosted (înlocuiește Google Fonts)
-- [ ] Configurare Cloudflare Turnstile pe formular
