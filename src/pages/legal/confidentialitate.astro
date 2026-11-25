@@ -92,7 +92,7 @@ const lastUpdated = '25 Noiembrie 2026';
             </ul>
             <p class="mt-3">
               Când trimiți formularul, datele tale ajung prin email (trimis prin Resend) la office@ai17hub.ro și sunt
-              salvate în jurnalul Cloudflare D1. Primești și un email scurt de confirmare, cel mult o dată la 24 de ore
+              salvate în jurnalul Cloudflare D1. De regulă primești și un email scurt de confirmare, cel mult o dată la 24 de ore
               pe aceeași adresă de email; confirmarea se activează odată cu jurnalul D1.
             </p>
             <p class="mt-3">
@@ -114,8 +114,10 @@ const lastUpdated = '25 Noiembrie 2026';
               <strong class="text-accent">[de confirmat de client: mecanismul de ștergere a datelor din jurnalul D1 și din emailurile primite la office@ai17hub.ro]</strong>
             </p>
             <p class="mt-3">
-              Adresa IP este păstrată doar pentru protecția anti-spam, cel mult 24 de ore: pentru IPv4, adresa întreagă;
-              pentru IPv6, doar prefixul /64 (primii 64 de biți ai adresei). După 24 de ore dispare din jurnal.
+              Adresa IP este păstrată doar pentru protecția anti-spam: pentru IPv4, adresa întreagă;
+              pentru IPv6, doar prefixul /64 (primii 64 de biți ai adresei). Se șterge automat după 24 de ore,
+              la următoarea procesare a formularului.
+              <strong class="text-accent">[de confirmat de client: dacă se cere ștergere garantată la 24h, e nevoie de un job programat]</strong>
             </p>
           </section>
 
