@@ -1,8 +1,7 @@
 # Shift-left Stage 2 — commit gate.
 # Runs automatically through the global shift-left git hook.
 # Refresh pins with `pre-commit autoupdate`.
-# Model: You Protect website. Differences: no .semgrep/ house rules (no backend/D1/Hono here)
-# and no Python linters (no Python in this repo).
+# Differences from the shift-left template: no house rules (.semgrep/), no Python linters.
 repos:
   # Generic hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
