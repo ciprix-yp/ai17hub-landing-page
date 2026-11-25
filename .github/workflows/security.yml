@@ -1,0 +1,110 @@
+# Shift-left Stage 3 — CI gate.
+# Make the jobs required checks in branch protection.
+# Actions are pinned to commit SHAs (supply-chain safety); Dependabot keeps them current.
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1" # weekly, catches newly published CVEs
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks-action lists the PR's commits (403 without it)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b # 1.181.0 (Dependabot does not update container images: bump by hand)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: semgrep scan --config p/default --config p/owasp-top-ten --error
+
+  # Semgrep does not parse .astro files, so client scripts inside them are never scanned.
+  # This job builds the site and scans the generated output (dist/) instead.
+  # dist/ is mounted alone as /src (no git repo, no .gitignore/.semgrepignore), so the default
+  # ignore rules do not hide it: verified, 33 files scanned without extra flags. Running
+  # `semgrep scan dist/` inside the repo would scan 0 files, because dist/ is gitignored.
+  # Built without PUBLIC_* env vars on purpose: no keys end up in the scanned output.
+  semgrep-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        # version is read from "packageManager" in package.json (pnpm 12.4.1)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Semgrep on build output
+        # semgrep/semgrep 1.181.0, pinned by digest
+        run: |
+          test -s dist/index.html
+          docker run --rm -v "$PWD/dist:/src:ro" -w /src \
+            semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b \
+            semgrep scan --config p/default --config p/owasp-top-ten --error .
+
+  # CodeQL and dependency review need GitHub Advanced Security on private repos.
+  # Public repos run them always; private repos when the variable GHAS_ENABLED=true.
+  # Without GHAS, Semgrep (SAST) and osv-scanner (dependencies) remain the gates.
+  codeql:
+    if: ${{ !github.event.repository.private || vars.GHAS_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # required by CodeQL on private repos
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+      - uses: github/codeql-action/autobuild@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Dependency review (PRs)
+        if: ${{ github.event_name == 'pull_request' && (!github.event.repository.private || vars.GHAS_ENABLED == 'true') }}
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+      - name: OSV scan (all lockfiles)
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --recursive
+            ./

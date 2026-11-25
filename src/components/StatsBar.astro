@@ -1,15 +1,17 @@
 ---
 const stats = [
-  { value: 1906, label: 'Anul clădirii', prefix: '', suffix: '', decimals: 0 },
-  { value: 1000000, label: 'Investiție', prefix: '', suffix: '€+', format: '1M' },
-  { value: 100, label: 'Profesioniști', prefix: '', suffix: '+', decimals: 0 },
-  { value: 4, label: 'Verticale', prefix: '', suffix: '', decimals: 0 },
+  { value: 1906, label: 'Anul clădirii', suffix: '', decimals: 0 },
+  { value: 1000000, label: 'Investiție', suffix: '€+', format: '1M' },
+  { value: 100, label: 'Profesioniști', suffix: '+', decimals: 0 },
+  { value: 1500, label: 'Suprafață totală', suffix: 'm²', decimals: 0 },
+  { value: 3, label: 'Niveluri funcționale', suffix: '', decimals: 0 },
+  { value: 6, label: 'Tipuri de spații și funcțiuni', suffix: '', decimals: 0 },
 ];
 ---
 
 <section class="bg-charcoal py-12 md:py-16" aria-label="Cifre cheie AI17 HUB">
   <div class="section-container">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4" role="list">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 md:gap-4" role="list">
       {stats.map((stat, i) => (
         <div class="stat-item text-center" role="listitem">
           <div

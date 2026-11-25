@@ -4,18 +4,15 @@
 ---
 
 <div
-  class="relative w-full overflow-hidden"
-  style="height: 220px;"
+  class="divider-wrap relative w-full overflow-hidden"
   aria-hidden="true"
 >
   <!-- Imagine de fundal -->
   <img
-    src="/renders/render-10.jpg"
-    alt=""
-    class="absolute inset-0 w-full h-full object-cover"
-    style="object-position: center 40%;"
+    src="/renders/hub-exterior.jpg"
+    alt="Fațada clădirii Avram Iancu 17 — HUB Constanța"
+    class="divider-img absolute inset-0 w-full h-full object-cover"
     loading="lazy"
-    data-dynamic-img
   />
 
   <!-- Overlay gradient puternic -->
@@ -34,3 +31,23 @@
     </p>
   </div>
 </div>
+
+<style>
+  .divider-wrap {
+    height: 220px;
+  }
+
+  .divider-img {
+    object-position: center 40%;
+  }
+
+  @media (min-width: 768px) {
+    .divider-wrap {
+      height: 380px;
+    }
+
+    .divider-img {
+      object-position: center 72%;
+    }
+  }
+</style>

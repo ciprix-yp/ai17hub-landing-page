@@ -25,6 +25,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
     <title>{title}</title>
     <meta name="description" content={description} />
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -- canonical link nu incarca resurse; SRI nu se aplica -->
     <link rel="canonical" href={canonicalURL} />
 
     <!-- Open Graph -->
