@@ -22,7 +22,14 @@ const TOKEN_MAX_LENGTH = 2048;
 export function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders },
+    // _headers din Pages nu se aplica raspunsurilor din Functions: HSTS si nosniff se pun aici (aceeasi valoare ca in public/_headers).
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      ...extraHeaders,
+    },
   });
 }
 

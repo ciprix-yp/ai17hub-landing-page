@@ -144,6 +144,13 @@ test('JSON invalid => 400 invalid', async () => {
   assert.deepEqual(json, { ok: false, error: 'invalid' });
 });
 
+test('raspunsurile au HSTS si nosniff (_headers nu se aplica Functions)', async () => {
+  const { res } = await setup().run(makeRequest(null, { raw: '{nu e json' }));
+  assert.equal(res.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal(res.headers.get('Strict-Transport-Security'), 'max-age=31536000; includeSubDomains');
+  assert.equal(res.headers.get('Cache-Control'), 'no-store');
+});
+
 test('Content-Type gresit => 400', async () => {
   const { run } = setup();
   const { res } = await run(makeRequest(validBody(), { headers: { 'Content-Type': 'text/plain' } }));
