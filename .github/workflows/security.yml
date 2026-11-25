@@ -32,7 +32,7 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep # TODO: pin by digest (Dependabot does not update container images)
+      image: semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b # 1.181.0 (Dependabot does not update container images: bump by hand)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -41,8 +41,9 @@ jobs:
 
   # Semgrep does not parse .astro files, so client scripts inside them are never scanned.
   # This job builds the site and scans the generated output (dist/) instead.
-  # dist/ is gitignored and skipped by the default .semgrepignore (and minified JS is
-  # excluded), hence --no-git-ignore and --x-ignore-semgrepignore-files.
+  # dist/ is mounted alone as /src (no git repo, no .gitignore/.semgrepignore), so the default
+  # ignore rules do not hide it: verified, 33 files scanned without extra flags. Running
+  # `semgrep scan dist/` inside the repo would scan 0 files, because dist/ is gitignored.
   # Built without PUBLIC_* env vars on purpose: no keys end up in the scanned output.
   semgrep-dist:
     runs-on: ubuntu-latest
@@ -63,8 +64,7 @@ jobs:
           test -s dist/index.html
           docker run --rm -v "$PWD/dist:/src:ro" -w /src \
             semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b \
-            semgrep scan --config p/default --config p/owasp-top-ten --error \
-            --no-git-ignore --x-ignore-semgrepignore-files .
+            semgrep scan --config p/default --config p/owasp-top-ten --error .
 
   # CodeQL and dependency review need GitHub Advanced Security on private repos.
   # Public repos run them always; private repos when the variable GHAS_ENABLED=true.
