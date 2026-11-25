@@ -8,9 +8,9 @@ export const IP_RETENTION_MS = 24 * 3_600_000;
 export const EMAIL_CONFIRM_WINDOW_MS = 24 * 3_600_000;
 /** Plafon global: peste atatea confirmari trimise in ultima ora, restul se omit (notificarea interna merge mereu). */
 export const MAX_CONFIRMATIONS_PER_HOUR = 30;
-// Data politicii de confidentialitate publicate (src/pages/legal/confidentialitate.astro: "23 Mai 2026").
-// Se actualizeaza cand Ciprian publica politica noua.
-export const CONSENT_VERSION = 'confidentialitate-2026-05-23';
+// Data politicii de confidentialitate (src/pages/legal/confidentialitate.astro: "25 Noiembrie 2026", data draftului).
+// Se actualizeaza cand Ciprian publica politica noua (daca aprobarea schimba data, se schimba si aici).
+export const CONSENT_VERSION = 'confidentialitate-2026-11-25';
 export const SOURCE = 'landing-prelaunch';
 export const INTERESTS = ['incubare', 'partener', 'evenimente', 'lab', 'curios'];
 

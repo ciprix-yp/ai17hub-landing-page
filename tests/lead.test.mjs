@@ -312,7 +312,7 @@ test('campuri extra ignorate: gdpr_timestamp/source/consent_version le pune serv
   const row = db.rows[0];
   assert.equal(row.id, 'id-1');
   assert.equal(row.consent_at, NOW.toISOString());
-  assert.equal(row.consent_version, 'confidentialitate-2026-05-23');
+  assert.equal(row.consent_version, 'confidentialitate-2026-11-25');
   assert.equal(row.ip, '203.0.113.7');
 });
 
@@ -578,8 +578,8 @@ test('raspunsurile functiei au CSP restrictiv, HSTS si nosniff', async () => {
   assert.equal(res.headers.get('Content-Security-Policy'), "default-src 'none'; frame-ancestors 'none'");
 });
 
-test('consent_version: politica publicata la 23 Mai 2026', () => {
-  assert.equal(CONSENT_VERSION, 'confidentialitate-2026-05-23');
+test('consent_version: politica din 25 Noiembrie 2026 (draft)', () => {
+  assert.equal(CONSENT_VERSION, 'confidentialitate-2026-11-25');
 });
 
 test('migratia reala: tabela si indexurile; indexul de email serveste interogarea', () => {

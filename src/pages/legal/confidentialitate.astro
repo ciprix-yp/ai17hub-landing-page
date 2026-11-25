@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-const lastUpdated = '23 Mai 2026';
+// DRAFT — de aprobat de client înainte de merge. Marcajele „[de confirmat de client …]” din text sunt vizibile
+// intenționat și se scot (sau se completează) la aprobare. Data de mai jos este data draftului.
+const lastUpdated = '25 Noiembrie 2026';
 ---
 
 <BaseLayout
@@ -45,6 +47,8 @@ const lastUpdated = '23 Mai 2026';
               <li style="list-style: disc;">Denumire companie / firmă (opțional)</li>
               <li style="list-style: disc;">Domeniu de interes selectat</li>
               <li style="list-style: disc;">Parametri UTM (sursă de trafic) — colectați automat din URL</li>
+              <li style="list-style: disc;">Acordul GDPR: data și ora acordului și versiunea politicii acceptate (le înregistrăm noi, pe server)</li>
+              <li style="list-style: disc;">Adresa IP, folosită doar pentru protecția anti-spam (vezi secțiunile 5 și 6)</li>
             </ul>
           </section>
 
@@ -81,10 +85,21 @@ const lastUpdated = '23 Mai 2026';
               cu garanții adecvate de securitate:
             </p>
             <ul class="mt-3 space-y-1.5 ml-4">
-              <li style="list-style: disc;"><strong class="text-sand">Supabase Inc.</strong> — stocare bază de date lead-uri (SUA, clauze contractuale standard UE)</li>
               <li style="list-style: disc;"><strong class="text-sand">Cloudflare Inc.</strong> — hosting și livrare site (SUA, certificare EU-US Data Privacy Framework)</li>
-              <li style="list-style: disc;"><strong class="text-sand">Resend Inc.</strong> — trimitere emailuri tranzacționale (SUA, clauze contractuale standard UE)</li>
+              <li style="list-style: disc;"><strong class="text-sand">Cloudflare Turnstile</strong> (Cloudflare Inc.) — verificare anti-spam la trimiterea formularului. Primește adresa ta IP și semnale tehnice din browser, ca să deosebească o persoană de un program automat. Scriptul se încarcă abia când începi să completezi formularul.</li>
+              <li style="list-style: disc;"><strong class="text-sand">Cloudflare D1</strong> (Cloudflare Inc.) — jurnalul lead-urilor trimise prin formular (jurisdicție UE)</li>
+              <li style="list-style: disc;"><strong class="text-sand">Resend Inc.</strong> — trimitere emailuri (SUA)</li>
             </ul>
+            <p class="mt-3">
+              Când trimiți formularul, datele tale ajung prin email (trimis prin Resend) la office@ai17hub.ro și sunt
+              salvate în jurnalul Cloudflare D1. Primești și un email scurt de confirmare, cel mult o dată la 24 de ore
+              pe aceeași adresă de email; confirmarea se activează odată cu jurnalul D1.
+            </p>
+            <p class="mt-3">
+              Resend are sediul în SUA, deci emailurile care conțin datele din formular sunt prelucrate în afara
+              Spațiului Economic European. Garanțiile pentru acest transfer:
+              <strong class="text-accent">[de confirmat de client: clauze contractuale standard și/sau certificare EU-US Data Privacy Framework a furnizorului]</strong>.
+            </p>
           </section>
 
           <section>
@@ -96,6 +111,11 @@ const lastUpdated = '23 Mai 2026';
             <p class="mt-3">
               Dacă nu a existat nicio comunicare sau interacțiune timp de 12 luni, îți putem trimite
               un email de confirmare a interesului. Dacă nu răspunzi, datele vor fi șterse.
+              <strong class="text-accent">[de confirmat de client: mecanismul de ștergere a datelor din jurnalul D1 și din emailurile primite la office@ai17hub.ro]</strong>
+            </p>
+            <p class="mt-3">
+              Adresa IP este păstrată doar pentru protecția anti-spam, cel mult 24 de ore: pentru IPv4, adresa întreagă;
+              pentru IPv6, doar prefixul /64 (primii 64 de biți ai adresei). După 24 de ore dispare din jurnal.
             </p>
           </section>
 
@@ -119,8 +139,8 @@ const lastUpdated = '23 Mai 2026';
           <section>
             <h2 class="font-sans font-bold text-sand mb-3" style="font-size: 1.125rem;">8. Securitate</h2>
             <p>
-              Datele tale sunt transmise prin conexiune HTTPS criptată și stocate în baze de date
-              cu acces restricționat prin chei API. Nu stocăm date de plată.
+              Datele tale sunt transmise prin conexiune HTTPS criptată și stocate în baza de date
+              Cloudflare D1, cu acces restricționat. Nu stocăm date de plată.
             </p>
           </section>
 
