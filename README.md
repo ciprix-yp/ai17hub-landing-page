@@ -26,7 +26,7 @@ pnpm astro check
 pnpm build
 
 # 6. Teste (formular + gardă deploy; folosesc node:sqlite, fără flag-uri pe Node 22.23.4)
-node --test tests/lead.test.mjs tests/check-deploy.test.mjs
+node --test tests/lead.test.mjs tests/check-deploy.test.mjs tests/guard-build.test.mjs
 
 # 7. Înainte de deploy, în ordinea asta (aceeași cheie reală în env la ambele):
 #    build cu cheia reală -> pnpm check:deploy -> deploy
@@ -45,8 +45,11 @@ Formularul (`src/components/CaptureForm.astro`) trimite JSON la `POST /api/lead`
 (Cloudflare Pages Function: `functions/api/lead.js`, logica în `server/lead.js`).
 Serverul verifică Origin, honeypot, validează câmpurile, verifică Cloudflare Turnstile,
 aplică rate limit (dacă există D1; cheia e IPv4 sau prefixul IPv6 /64), salvează în D1 (opțional)
-și trimite prin Resend o notificare către echipă. Confirmarea către vizitator pleacă doar din
-producție (`ai17hub.ro` / `www.ai17hub.ro`) și, cu D1, o singură dată la 24h pe același email.
+și trimite prin Resend o notificare către echipă. Confirmarea către vizitator se activează odată cu D1:
+pleacă doar din producție (`ai17hub.ro` / `www.ai17hub.ro`), doar dacă lead-ul a fost salvat, o singură
+dată la 24h pe același email normalizat (litere mici, fără `+tag`, gmail fără puncte) și cel mult 30 pe oră
+în total. Fără D1 (sau dacă salvarea cade) pleacă doar notificarea internă. Rate limit-ul per IP e atomic
+(INSERT condiționat), deci cererile concurente nu îl pot depăși.
 
 Variabile (nume în `.env.example`):
 
@@ -59,6 +62,19 @@ Numele proiectului Pages este `ai17hub-landing-page` (`wrangler.toml`). Cu un `w
 jurnalul D1 (`LEADS_DB`, `migrations/0001_lead.sql`) trebuie declarat în `wrangler.toml` după
 `wrangler d1 create`, nu doar în dashboard. Până atunci e dezactivat; pașii sunt în `wrangler.toml`.
 Local: `.dev.vars` (nu se comite) sau `wrangler pages dev dist --binding TURNSTILE_SECRET_KEY=<cheie de test>`.
+
+---
+
+## Build pe Cloudflare Pages (de setat de Ciprian)
+
+`pnpm build` rulează întâi `scripts/guard-build.mjs`. Doar pe Cloudflare Pages, la producție
+(`CF_PAGES=1` și `CF_PAGES_BRANCH=main`), build-ul pică dacă `PUBLIC_TURNSTILE_SITE_KEY` lipsește sau e cheia
+de test. Local, în CI GitHub, pe preview și pe alte branch-uri nu face nimic.
+
+De setat în dashboard: Pages -> proiectul `ai17hub-landing-page` -> Settings -> Variables and Secrets ->
+variabila de **build** `PUBLIC_TURNSTILE_SITE_KEY` (cheia publică reală), la mediul **Production**.
+(`[vars]` din `wrangler.toml` sunt variabile de runtime, nu de build.) Până o setezi, build-ul de producție
+pică intenționat, iar site-ul vechi rămâne live.
 
 ---
 
